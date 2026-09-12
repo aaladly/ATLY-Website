@@ -54,6 +54,7 @@ Then open http://localhost:3100.
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint (`next lint` was removed in Next 16) |
+| `npm run check:contrast` | WCAG AA audit of the palette; non-zero exit on failure |
 
 ### Environment
 
@@ -115,8 +116,8 @@ instructions, and a full stop to wait for `CONTINUE`.
 
 | Step | Scope | Status |
 | --- | --- | --- |
-| 1 | Scaffold and guardrails | In progress |
-| 2 | Brand system + `/styleguide` | Not started |
+| 1 | Scaffold and guardrails | Complete |
+| 2 | Brand system + `/styleguide` | Awaiting approval |
 | 3 | Catalog schema and pricing engine | Not started |
 | 4 | Storefront pages | Not started |
 | 5 | Cart | Not started |
