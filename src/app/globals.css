@@ -1,1 +1,119 @@
 @import "tailwindcss";
+
+/* =====================================================================
+   ATLY Belgian Chocolate — design tokens
+   Palette sampled from the logo. Every non-decorative pairing is verified
+   against WCAG AA by scripts/contrast.mjs (npm run check:contrast).
+   Keep the two in sync.
+   ===================================================================== */
+
+@theme {
+  /* --- Color -------------------------------------------------------- */
+  /* Given: sampled from the supplied logo file. */
+  --color-cocoa-deep: #4e1901;  /* wordmark brown: primary text, dark surfaces */
+  --color-cream:      #f8e2c4;  /* logo background: page base */
+
+  /* Derived from the two above. */
+  --color-cocoa:      #7a4a2b;  /* cacao illustration tone: secondary text, borders */
+  --color-ivory:      #fdf5ea;  /* cards and raised panels */
+
+  /* Two golds, because one cannot do both jobs at AA.
+     gold      — ornament on light surfaces; large-text accent on dark (3.81:1)
+     gold-deep — the functional gold on LIGHT surfaces: labels, links, focus */
+  --color-gold:       #a67c3d;
+  --color-gold-deep:  #7e5822;
+
+  /* Hairlines and ornament. Decorative — exempt from WCAG 1.4.11. */
+  --color-rule:        #d8bc92;  /* faintest hairline */
+  --color-rule-strong: #c9a87a;  /* visible divider */
+
+  /* Form validation. Not in the brand palette; an oxblood chosen to sit
+     inside the brown family rather than introduce a bright accent. */
+  --color-error: #8c2b12;
+
+  /* --- Type --------------------------------------------------------- */
+  --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-work-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --text-display-xl: 4rem;      /* 64px — hero */
+  --text-display-xl--line-height: 1.04;
+  --text-display-l: 3rem;       /* 48px — page titles */
+  --text-display-l--line-height: 1.08;
+  --text-display-m: 2.25rem;    /* 36px — section headings */
+  --text-display-m--line-height: 1.15;
+  --text-display-s: 1.5rem;     /* 24px — card headings */
+  --text-display-s--line-height: 1.25;
+
+  --text-body-l: 1.125rem;      /* 18px — lead paragraphs */
+  --text-body-l--line-height: 1.7;
+  --text-body-m: 1rem;          /* 16px — default */
+  --text-body-m--line-height: 1.7;
+  --text-body-s: 0.875rem;      /* 14px — captions, help text */
+  --text-body-s--line-height: 1.6;
+  --text-label: 0.75rem;        /* 12px — small-caps letterspaced labels */
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.18em;
+
+  /* --- Space -------------------------------------------------------- */
+  /* Luxury reads as restraint: section rhythm is deliberately large. */
+  --spacing-section: 6rem;
+  --spacing-section-lg: 9rem;
+  --spacing-gutter: 1.5rem;
+}
+
+/* --- Base ----------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-cocoa-deep);
+    font-family: var(--font-body);
+    font-size: var(--text-body-m);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Keyboard focus must always be visible. Never remove without replacing. */
+  :focus-visible {
+    outline: 2px solid var(--color-gold-deep);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* On dark surfaces the gold ring disappears; cream carries 11.39:1 there. */
+  .on-dark :focus-visible {
+    outline-color: var(--color-cream);
+  }
+
+  /* Motion: slow, minimal fades only — and honour the OS setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* --- Primitives ------------------------------------------------------ */
+
+@layer components {
+  .label-caps {
+    font-family: var(--font-body);
+    font-size: var(--text-label);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--color-gold-deep);
+  }
+}
