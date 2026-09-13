@@ -109,9 +109,11 @@ No preservatives, no additives. Everything is made by hand in small batches.
 New Jersey only. No nationwide shipping yet; the site states this before checkout, never
 as a surprise at the address step.
 
-- Free delivery on orders over $50 — **Hunterdon County, NJ only**
-- $5.99 on other qualifying orders
-- Cost also varies by package weight (tiers approved in Step 6)
+- **Free delivery throughout Hunterdon County**, hand-delivered, with no minimum
+- $5.99 elsewhere in New Jersey, by carrier
+- Weight tiers above 48 oz are approved in shape but NOT active: no SKU has a
+  packaged weight yet, and activating tiers before weights exist would make the
+  engine refuse to quote every order. See `src/config/delivery.ts`.
 
 State is validated server-side at checkout. ZIP is checked against an editable Hunterdon
 County list, not a hardcoded array in a component.
@@ -128,7 +130,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 3 | Catalog schema and pricing engine | Complete |
 | 4 | Storefront pages | Complete |
 | 5 | Cart | Complete |
-| 6 | Delivery rules engine | Partial — weight tiers blocked |
+| 6 | Delivery rules engine | Complete — weight tiers pending weights |
 | 7 | Checkout and payment | Not started |
 | 8 | About Us and brand story | Not started |
 | 9 | Admin | Not started |
@@ -166,9 +168,12 @@ Tracked here so they are not silently guessed at.
   needs the original artwork in hand. (Step 2, blocks Step 4)
 - **Assets** — `public/images/` and `reference/` are still empty. Step 4 is
   photography-led and cannot start without them.
-- **Delivery pricing** — $5.99 flat vs weight-tiered; the tier table; whether the
-  Hunterdon free-delivery benefit is over-$50 only; hand-delivery vs carrier; any NJ
-  areas excluded. (Step 6)
+- **Delivery rates above 48 oz** — the flat $5.99 covers up to 3 lb. Rates for
+  heavier orders are still needed, along with packaged weights to measure against.
+  (Step 6)
+- **Excluded NJ areas** — whether any exist at all. Currently none. (Step 6)
+- **Hunterdon ZIP list** — the list in `src/config/delivery.ts` is an UNVERIFIED
+  draft and decides who gets free delivery. Check it against USPS before launch.
 - **Warm weather** — shipping warnings and/or seasonal delivery pauses? (Step 6)
 - **NJ sales tax** — New Jersey exempts food but carves candy back out, so chocolate is
   likely taxable at 6.625%. Confirm the Stripe Tax product code with an accountant.

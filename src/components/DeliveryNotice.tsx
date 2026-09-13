@@ -16,7 +16,6 @@ export function DeliveryNotice({
 }: {
   tone?: "prominent" | "inline";
 }) {
-  const free = formatCents(BRAND.delivery.freeThresholdCents);
   const standard = formatCents(BRAND.delivery.standardCents);
 
   if (tone === "prominent") {
@@ -30,9 +29,8 @@ export function DeliveryNotice({
             shipping nationwide yet.
           </p>
           <p className="mt-1 text-body-s text-cocoa">
-            Free delivery on orders over {free} in {BRAND.delivery.freeCounty}.{" "}
-            {standard} elsewhere in {BRAND.delivery.stateOnly}, varying with
-            package weight.
+            Free delivery throughout {BRAND.delivery.freeCounty}. {standard}{" "}
+            elsewhere in {BRAND.delivery.stateOnly}.
           </p>
         </div>
       </aside>
@@ -44,7 +42,7 @@ export function DeliveryNotice({
       <strong className="text-cocoa-deep">
         {BRAND.delivery.stateOnly} delivery only.
       </strong>{" "}
-      Free over {free} in {BRAND.delivery.freeCounty}, {standard} elsewhere in{" "}
+      Free throughout {BRAND.delivery.freeCounty}, {standard} elsewhere in{" "}
       {BRAND.delivery.stateOnly}.
     </p>
   );

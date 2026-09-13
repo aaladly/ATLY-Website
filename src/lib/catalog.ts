@@ -140,8 +140,10 @@ export const BRAND = {
   },
   delivery: {
     stateOnly: "New Jersey",
-    freeThresholdCents: 5000,
     freeCounty: "Hunterdon County",
+    // Owner-confirmed, Step 6: every Hunterdon order is free, no threshold.
+    // The original "$50" figure no longer applies anywhere on the site.
+    freeCountyAlwaysFree: true,
     standardCents: 599,
   },
 } as const;

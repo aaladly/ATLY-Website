@@ -112,11 +112,13 @@ export function quoteDelivery(
   }
 
   const inFreeCounty = config.freeCountyZips.includes(zip);
+  const { alwaysFree, thresholdCents, thresholdInclusive } = config.freeCounty;
 
-  const threshold = config.freeThreshold.cents;
-  const meetsThreshold = config.freeThreshold.inclusive
-    ? input.subtotalCents >= threshold
-    : input.subtotalCents > threshold;
+  const meetsThreshold =
+    alwaysFree ||
+    (thresholdInclusive
+      ? input.subtotalCents >= thresholdCents
+      : input.subtotalCents > thresholdCents);
 
   if (inFreeCounty && meetsThreshold) {
     return {
@@ -124,17 +126,22 @@ export function quoteDelivery(
       costCents: 0,
       isFree: true,
       inFreeCounty: true,
-      explanation: `Free delivery — orders over ${formatDollars(threshold)} in ${config.freeCountyName}.`,
+      explanation: alwaysFree
+        ? `Free delivery throughout ${config.freeCountyName}.`
+        : `Free delivery — orders of ${formatDollars(thresholdCents)} or more in ${config.freeCountyName}.`,
       centsToFreeDelivery: null,
     };
   }
 
   // How much more would reach free delivery, for customers who can get there.
-  const shortfall = config.freeThreshold.inclusive
-    ? threshold - input.subtotalCents
-    : threshold - input.subtotalCents + 1;
+  // Never shown when the county is always free (nothing to reach) or when the
+  // customer is outside it (telling them to spend more for delivery they can
+  // never get free would be a lie).
+  const shortfall = thresholdInclusive
+    ? thresholdCents - input.subtotalCents
+    : thresholdCents - input.subtotalCents + 1;
   const centsToFreeDelivery =
-    inFreeCounty && shortfall > 0 ? shortfall : null;
+    inFreeCounty && !alwaysFree && shortfall > 0 ? shortfall : null;
 
   // Weight tiers, once the owner has approved a table.
   if (config.weightTiers.length > 0) {
@@ -172,7 +179,7 @@ export function quoteDelivery(
     isFree: false,
     inFreeCounty,
     explanation: inFreeCounty
-      ? `${formatDollars(config.standardCents)} delivery. Orders over ${formatDollars(threshold)} in ${config.freeCountyName} are delivered free.`
+      ? `${formatDollars(config.standardCents)} delivery. Orders of ${formatDollars(thresholdCents)} or more in ${config.freeCountyName} are delivered free.`
       : `${formatDollars(config.standardCents)} delivery within ${config.allowedStateName}.`,
     centsToFreeDelivery,
   };

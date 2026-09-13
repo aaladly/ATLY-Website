@@ -94,9 +94,8 @@ export function SiteFooter() {
               We deliver within {BRAND.delivery.stateOnly} only.
             </p>
             <p className="mt-3 text-body-s text-cocoa">
-              Free delivery on orders over $50 in {BRAND.delivery.freeCounty}.
-              $5.99 elsewhere in {BRAND.delivery.stateOnly}. Delivery cost also
-              varies with package weight.
+              Free delivery throughout {BRAND.delivery.freeCounty}, which we
+              deliver by hand. $5.99 elsewhere in {BRAND.delivery.stateOnly}.
             </p>
           </div>
         </div>

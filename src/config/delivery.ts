@@ -20,25 +20,26 @@ export type DeliveryConfig = {
   /** The flat rate for a qualifying order outside the free-delivery county. */
   standardCents: number;
 
-  freeThreshold: {
-    cents: number;
-    /**
-     * The owner's wording is "free delivery on orders over $50".
-     *
-     * Read literally, $50.00 exactly does NOT qualify. Most shops mean "$50 or
-     * more", and a customer whose subtotal lands on exactly $50.00 and is
-     * charged $5.99 will write in about it. Set to true to make $50.00 qualify.
-     *
-     * TODO: owner to confirm. Implemented literally for now, and the boundary
-     * is covered by a test either way.
-     */
-     inclusive: boolean;
+  /**
+   * Free-delivery policy for the home county.
+   *
+   * The owner's original brief said "free on orders over $50 in Hunterdon",
+   * then confirmed in Step 6 that it is free for ANY order in the county.
+   * alwaysFree reflects that. thresholdCents is kept so a threshold can be
+   * reintroduced — here or for the rest of the state — without a code change,
+   * and is ignored entirely while alwaysFree is true.
+   */
+  freeCounty: {
+    alwaysFree: boolean;
+    thresholdCents: number;
+    /** Whether a subtotal exactly equal to the threshold qualifies. */
+    thresholdInclusive: boolean;
   };
 
   freeCountyName: string;
 
   /**
-   * ZIP codes that qualify for free delivery over the threshold.
+   * ZIP codes that qualify for free delivery.
    *
    * !! UNVERIFIED !! ---------------------------------------------------------
    * This is a best-effort draft of Hunterdon County, NJ ZIP codes. It has NOT
@@ -63,9 +64,18 @@ export type DeliveryConfig = {
    * or tiers from the first ounce — and no packaged weights have been measured
    * either.
    *
+   * Owner-approved shape (Step 6): $5.99 flat up to 48 oz, tiers above that.
+   * NOT ACTIVATED YET, and deliberately so — no SKU has a packaged weight, and
+   * once this array is non-empty the engine refuses to quote an order whose
+   * weight it cannot determine. Turning it on before weights exist would break
+   * every order on the site.
+   *
+   * To activate: measure packagedWeightOz for every variant, then add
+   *   { maxOunces: 48, priceCents: 599 }
+   * plus the owner's rates for anything heavier.
+   *
    * While this array is empty the engine charges the flat standard rate and
-   * says so. Populating it switches the engine to tiered pricing with no code
-   * change. Do not invent tiers to fill it.
+   * says so. Do not invent tiers to fill it.
    */
   weightTiers: readonly WeightTier[];
 
@@ -80,9 +90,13 @@ export const DELIVERY_CONFIG: DeliveryConfig = {
   allowedState: "NJ",
   allowedStateName: "New Jersey",
   standardCents: 599,
-  freeThreshold: {
-    cents: 5000,
-    inclusive: false,
+  freeCounty: {
+    // Owner-confirmed, Step 6: every Hunterdon order is delivered free,
+    // regardless of size. These are hand-delivered locally, so the cost is
+    // time and fuel rather than postage.
+    alwaysFree: true,
+    thresholdCents: 5000,
+    thresholdInclusive: true,
   },
   freeCountyName: "Hunterdon County",
 

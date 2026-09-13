@@ -22,7 +22,8 @@ const BASE: DeliveryConfig = {
   allowedState: "NJ",
   allowedStateName: "New Jersey",
   standardCents: 599,
-  freeThreshold: { cents: 5000, inclusive: false },
+  // Threshold mode. Production runs alwaysFree; both are covered below.
+  freeCounty: { alwaysFree: false, thresholdCents: 5000, thresholdInclusive: true },
   freeCountyName: "Hunterdon County",
   freeCountyZips: ["08822", "08809"],
   weightTiers: [],
@@ -103,29 +104,68 @@ describe("Hunterdon County free delivery", () => {
     assert.equal(result.costCents, 599);
     assert.equal(result.isFree, false);
     assert.equal(result.inFreeCounty, true);
-    // $40.00 -> needs $10.01 more to be strictly over $50.
-    assert.equal(result.centsToFreeDelivery, 1001);
+    // $40.00 -> needs $10.00 more to reach $50 inclusive.
+    assert.equal(result.centsToFreeDelivery, 1000);
   });
 
   test("the $50.00 boundary follows the inclusive flag", () => {
-    // "over $50" read literally: exactly $50.00 does not qualify.
-    const exclusive = quote("08822", 5000);
+    // Owner-confirmed: $50.00 exactly qualifies.
+    const inclusive = quote("08822", 5000);
+    assert.equal(inclusive.kind, "quoted");
+    if (inclusive.kind !== "quoted") return;
+    assert.equal(inclusive.costCents, 0);
+
+    // Flipped to the literal "over $50", the same order pays — and is told
+    // to add a single cent, which is why the owner chose inclusive.
+    const exclusive = quote("08822", 5000, {
+      freeCounty: { alwaysFree: false, thresholdCents: 5000, thresholdInclusive: false },
+    });
     assert.equal(exclusive.kind, "quoted");
     if (exclusive.kind !== "quoted") return;
     assert.equal(exclusive.costCents, 599);
     assert.equal(exclusive.centsToFreeDelivery, 1);
-
-    // Flipped to "at least $50", the same order ships free.
-    const inclusive = quote("08822", 5000, {
-      freeThreshold: { cents: 5000, inclusive: true },
-    });
-    assert.equal(inclusive.kind, "quoted");
-    if (inclusive.kind !== "quoted") return;
-    assert.equal(inclusive.costCents, 0);
   });
 
   test("a cent over the threshold is free", () => {
     const result = quote("08822", 5001);
+    if (result.kind !== "quoted") return assert.fail("expected a quote");
+    assert.equal(result.costCents, 0);
+  });
+});
+
+describe("Hunterdon County with no threshold (the configured behaviour)", () => {
+  const always: Partial<DeliveryConfig> = {
+    freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
+  };
+
+  test("every order in the county is free, however small", () => {
+    for (const subtotal of [200, 500, 4999, 5000, 20000]) {
+      const result = quote("08822", subtotal, always);
+      assert.equal(result.kind, "quoted", `subtotal ${subtotal}`);
+      if (result.kind !== "quoted") return;
+      assert.equal(result.costCents, 0, `subtotal ${subtotal}`);
+      assert.equal(result.isFree, true);
+    }
+  });
+
+  test("no spend-more nudge, because there is nothing to reach", () => {
+    const result = quote("08822", 200, always);
+    if (result.kind !== "quoted") return assert.fail("expected a quote");
+    assert.equal(result.centsToFreeDelivery, null);
+  });
+
+  test("the rest of New Jersey still pays the standard rate", () => {
+    const result = quote("07030", 20000, always);
+    if (result.kind !== "quoted") return assert.fail("expected a quote");
+    assert.equal(result.costCents, 599);
+    assert.equal(result.inFreeCounty, false);
+  });
+
+  test("free county beats weight tiers entirely", () => {
+    const result = quote("08822", 500, {
+      ...always,
+      weightTiers: [{ maxOunces: 48, priceCents: 599 }],
+    }, "NJ", 200);
     if (result.kind !== "quoted") return assert.fail("expected a quote");
     assert.equal(result.costCents, 0);
   });
