@@ -8,6 +8,8 @@
     "start": "next start --port 3100",
     "lint": "eslint",
     "check:contrast": "node scripts/contrast.mjs",
+    "admin:password": "node scripts/admin-password.mjs",
+    "admin:secret": "node scripts/admin-secret.mjs",
     "test": "node --test \"src/**/*.test.mts\""
   },
   "dependencies": {

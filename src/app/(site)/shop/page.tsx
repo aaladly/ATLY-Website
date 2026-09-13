@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
-import { PRODUCTS, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
+import { productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
 import { PRODUCT_IMAGE } from "@/lib/images";
-import { TIERS_BY_KIND, priceQuantity, formatCents } from "@/lib/pricing";
+import { priceQuantity, formatCents } from "@/lib/pricing";
+import { getStorefrontSettings } from "@/lib/settings/resolve";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
     "Hand-filled bon-bons and hand-moulded bars, made from Belgian couverture in small batches. Delivered within New Jersey.",
 };
 
-export default function Shop() {
+export default async function Shop() {
+  const { products, tiers: tiersByKind } = await getStorefrontSettings();
+
   return (
     <main>
       <section className="mx-auto max-w-6xl px-gutter pt-section pb-12">
@@ -28,11 +31,13 @@ export default function Shop() {
 
       <section className="mx-auto max-w-6xl px-gutter py-section">
         <div className="grid gap-14 lg:grid-cols-2 lg:gap-10">
-          {PRODUCTS.map((product) => {
-            const tiers = [...TIERS_BY_KIND[product.kind]].sort(
+          {products.map((product) => {
+            const tiers = [...tiersByKind[product.kind]].sort(
               (a, b) => a.size - b.size,
             );
             const allergens = productAllergens(product);
+            const available = product.variants.filter((v) => v.isAvailable);
+            const soldOut = !product.isAvailable || available.length === 0;
 
             return (
               <article key={product.slug} className="flex flex-col">
@@ -46,6 +51,11 @@ export default function Shop() {
                   </div>
                   <h2 className="mt-6 text-display-m group-hover:text-gold-deep">
                     {product.name}
+                    {soldOut && (
+                      <span className="ml-3 align-middle text-label uppercase text-error">
+                        Sold out
+                      </span>
+                    )}
                   </h2>
                 </Link>
 
@@ -80,7 +90,9 @@ export default function Shop() {
 
                 <h3 className="label-caps mt-7">Flavors</h3>
                 <p className="mt-2 text-body-m">
-                  {product.variants.map((v) => v.name).join(" · ")}
+                  {soldOut
+                    ? "None available at the moment."
+                    : available.map((v) => v.name).join(" · ")}
                 </p>
 
                 <p className="mt-5 text-body-s text-cocoa">

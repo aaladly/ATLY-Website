@@ -55,7 +55,9 @@ Then open http://localhost:3100.
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint (`next lint` was removed in Next 16) |
 | `npm run check:contrast` | WCAG AA audit of the palette; non-zero exit on failure |
-| `npm test` | Pricing engine unit tests (Node built-in runner, no dependency) |
+| `npm test` | Unit tests (Node built-in runner, no dependency) |
+| `npm run admin:password` | Make an admin password hash. Never stores or prints the password |
+| `npm run admin:secret` | Make an admin session secret |
 
 ### Environment
 
@@ -69,14 +71,21 @@ cp .env.example .env.local
 ## Project layout
 
 ```
-src/app/               routes (App Router)
+src/app/(site)/        the shop — its own header, footer and chrome
+src/app/admin/         the admin, behind a password — different chrome
 src/components/        UI components
 src/lib/               business logic and service clients
+src/lib/settings/      admin-editable overrides on top of the values in code
 src/types/             shared TypeScript types
 supabase/migrations/   SQL migrations
 public/images/         logo and product photography
 reference/             source material (market signage, spec documents)
 ```
+
+`(site)` and `admin` are route groups: the parentheses are not part of any URL,
+so `/shop` and `/cart` are exactly where they were. The split exists so an
+order-management screen does not wear the shop's navigation, which would put
+"Add to cart" next to "Mark delivered".
 
 The **pricing engine** (Step 3) and **delivery engine** (Step 6) live in `src/lib/` and
 stay pure and testable: no React, no database calls, no clock reads inside the
@@ -116,7 +125,47 @@ as a surprise at the address step.
   engine refuse to quote every order. See `src/config/delivery.ts`.
 
 State is validated server-side at checkout. ZIP is checked against an editable Hunterdon
-County list, not a hardcoded array in a component.
+County list, not a hardcoded array in a component — and since Step 9 that list is edited
+from the admin rather than from the file.
+
+## Admin
+
+`/admin` — order list and detail, status changes, what is available, what it costs, and
+the delivery rules.
+
+**Setting it up.** Two values in `.env.local`, and with either one missing nobody can
+sign in at all. There is no default password and no "unset means open" path.
+
+```bash
+npm run admin:password   # -> ADMIN_PASSWORD_HASH
+npm run admin:secret     # -> ADMIN_SESSION_SECRET
+```
+
+The password is typed at a prompt, hashed with scrypt, and never stored or printed —
+not by these commands and not by the application. Forgetting it means generating a new
+hash, not recovering the old password. Changing `ADMIN_SESSION_SECRET` signs every
+session out at once, which is the emergency exit.
+
+**What the admin can change, and what it cannot.** Availability, packaged weights,
+bundle prices, the delivery rate, the free-delivery ZIP list, excluded ZIPs, and weight
+tiers. It cannot change product names, descriptions, flavors, or **allergens** — those
+stay in code where a change is reviewed. An allergen list is not something to retype
+into a text box.
+
+Edits take effect immediately, everywhere: the shop, the product pages, the cart, the
+live delivery estimate, and the server-side checkout that authorises the charge all read
+the same effective settings. Two guards refuse a save rather than letting it through:
+
+- **A price table must keep a price for a single one.** Without it the pricing engine
+  throws and every page that prices that product goes down with it.
+- **Weight tiers cannot be switched on while anything is unweighed.** The delivery
+  engine refuses to quote an order it cannot weigh, so turning tiers on early would
+  refuse every order on the site.
+
+> **Not durable yet.** Changes live in the server's memory until Supabase is connected,
+> so they are lost on restart and are not shared between serverless instances. The admin
+> says so on every page, and the banner disappears by itself when
+> `SETTINGS_ARE_DURABLE` flips in `src/lib/settings/store.ts`.
 
 ## Build status
 
@@ -133,7 +182,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 6 | Delivery rules engine | Complete — weight tiers pending weights |
 | 7 | Checkout and payment | Partial — blocked on Stripe, Supabase, Resend |
 | 8 | About Us and brand story | Complete |
-| 9 | Admin | Not started |
+| 9 | Admin | Complete — settings are in memory until Supabase |
 | 10 | Compliance, SEO, launch | Not started |
 
 ## Open questions
@@ -178,7 +227,9 @@ Tracked here so they are not silently guessed at.
 - **Is the 500% standard on ingredients only, or fully loaded including labor?**
 - **Packaged weights** — shipping ounces for a filled 3-box, a filled 10-box, and a
   wrapped bar. Chocolate weight is known (9g a bon-bon, ~27.5g a bar); packaged weight
-  is not. Blocks Step 6.
+  is not. Blocks Step 6. **No longer needs a code change:** weigh each one on a kitchen
+  scale and enter the ounces on `/admin/products`. Weight-based delivery rates unlock
+  once every flavor has one.
 - **Logo wordmark** — the supplied logo reads "ARTISAN CHOCOLATES"; every site use must
   read "BELGIAN CHOCOLATE". Corrected file, or rebuild the lockup in SVG? Rebuilding
   needs the original artwork in hand. (Step 2, blocks Step 4)
@@ -188,8 +239,9 @@ Tracked here so they are not silently guessed at.
   heavier orders are still needed, along with packaged weights to measure against.
   (Step 6)
 - **Excluded NJ areas** — whether any exist at all. Currently none. (Step 6)
-- **Hunterdon ZIP list** — the list in `src/config/delivery.ts` is an UNVERIFIED
-  draft and decides who gets free delivery. Check it against USPS before launch.
+- **Hunterdon ZIP list** — an UNVERIFIED draft that decides who gets free delivery.
+  Check it against USPS before launch. Editable at `/admin/delivery`; the copy in
+  `src/config/delivery.ts` is the fallback when nothing has been changed.
 - **Warm weather** — shipping warnings and/or seasonal delivery pauses? (Step 6)
 - **NJ sales tax** — New Jersey exempts food but carves candy back out, so chocolate is
   likely taxable at 6.625%. Confirm the Stripe Tax product code with an accountant.

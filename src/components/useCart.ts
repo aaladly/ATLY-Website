@@ -18,8 +18,8 @@ import {
   getSnapshot,
   subscribe,
 } from "@/lib/cartStore";
-import { variantLookup } from "@/lib/catalog";
 import { priceCart, type CartPrice } from "@/lib/pricing";
+import { useTiers, useVariantLookup } from "./StorefrontSettings";
 
 export type UseCart = {
   cart: CartState;
@@ -51,6 +51,11 @@ export function useCart(): UseCart {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { cart, hydrated } = snapshot;
 
+  // Prices and availability as the owner has them set right now, not as they
+  // were when this bundle was built.
+  const tiers = useTiers();
+  const variantLookup = useVariantLookup();
+
   const add = useCallback((variantId: string, quantity: number) => {
     dispatch((current) => addLine(current, variantId, quantity));
   }, []);
@@ -73,7 +78,7 @@ export function useCart(): UseCart {
     () => ({
       cart,
       hydrated,
-      price: priceCart(toCartItems(cart, variantLookup)),
+      price: priceCart(toCartItems(cart, variantLookup), tiers),
       itemCount: totalItems(cart),
       add,
       setQuantity,
@@ -82,6 +87,6 @@ export function useCart(): UseCart {
       clear,
       quantityOf: (variantId: string) => readLineQuantity(cart, variantId),
     }),
-    [cart, hydrated, add, setQuantity, adjust, remove, clear],
+    [cart, hydrated, tiers, variantLookup, add, setQuantity, adjust, remove, clear],
   );
 }

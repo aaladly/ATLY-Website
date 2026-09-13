@@ -1,5 +1,7 @@
-import { BRAND } from "@/lib/catalog";
+"use client";
+
 import { formatCents } from "@/lib/pricing";
+import { useDeliveryConfig } from "./StorefrontSettings";
 
 /**
  * The New Jersey-only notice.
@@ -10,13 +12,24 @@ import { formatCents } from "@/lib/pricing";
  *
  * `tone="prominent"` is the banded version for the top of a page; `tone="inline"`
  * is a quieter line for inside a product panel.
+ *
+ * A client component so it can read the live delivery rules. It renders in
+ * server pages and inside the cart alike, and the rate it quotes has to be the
+ * rate the customer is actually charged — a stale "$5.99" here while the owner
+ * has moved to $6.99 is the site lying about a price.
  */
 export function DeliveryNotice({
   tone = "inline",
 }: {
   tone?: "prominent" | "inline";
 }) {
-  const standard = formatCents(BRAND.delivery.standardCents);
+  const config = useDeliveryConfig();
+  const standard = formatCents(config.standardCents);
+  const stateOnly = config.allowedStateName;
+  const freeCounty = config.freeCountyName;
+  const freeLine = config.freeCounty.alwaysFree
+    ? `Free delivery throughout ${freeCounty}.`
+    : `Free delivery on orders of ${formatCents(config.freeCounty.thresholdCents)} or more in ${freeCounty}.`;
 
   if (tone === "prominent") {
     return (
@@ -24,13 +37,11 @@ export function DeliveryNotice({
         <div className="mx-auto max-w-6xl px-gutter py-5 text-center">
           <p className="label-caps">Delivery area</p>
           <p className="mt-2 text-body-m">
-            We currently deliver within{" "}
-            <strong>{BRAND.delivery.stateOnly} only</strong> — we are not
-            shipping nationwide yet.
+            We currently deliver within <strong>{stateOnly} only</strong> — we
+            are not shipping nationwide yet.
           </p>
           <p className="mt-1 text-body-s text-cocoa">
-            Free delivery throughout {BRAND.delivery.freeCounty}. {standard}{" "}
-            elsewhere in {BRAND.delivery.stateOnly}.
+            {freeLine} {standard} elsewhere in {stateOnly}.
           </p>
         </div>
       </aside>
@@ -39,11 +50,8 @@ export function DeliveryNotice({
 
   return (
     <p className="text-body-s text-cocoa">
-      <strong className="text-cocoa-deep">
-        {BRAND.delivery.stateOnly} delivery only.
-      </strong>{" "}
-      Free throughout {BRAND.delivery.freeCounty}, {standard} elsewhere in{" "}
-      {BRAND.delivery.stateOnly}.
+      <strong className="text-cocoa-deep">{stateOnly} delivery only.</strong>{" "}
+      {freeLine} {standard} elsewhere in {stateOnly}.
     </p>
   );
 }

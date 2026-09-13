@@ -11,7 +11,8 @@ import {
   ALLERGEN_LABEL,
 } from "@/lib/catalog";
 import { PRODUCT_IMAGE } from "@/lib/images";
-import { TIERS_BY_KIND, priceQuantity, formatCents } from "@/lib/pricing";
+import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
+import { getStorefrontSettings } from "@/lib/settings/resolve";
 
 export function generateStaticParams() {
   return PRODUCTS.map((p) => ({ slug: p.slug }));
@@ -32,10 +33,14 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: PageProps<"/shop/[slug]">) {
   const { slug } = await params;
-  const product = getProduct(slug);
+
+  // The effective product, so a flavor the owner marked sold out is shown as
+  // sold out here and cannot be added to a cart.
+  const { products, tiers: tiersByKind } = await getStorefrontSettings();
+  const product = products.find((p) => p.slug === slug);
   if (!product) notFound();
 
-  const tiers = [...TIERS_BY_KIND[product.kind]].sort((a, b) => a.size - b.size);
+  const tiers = [...tiersByKind[product.kind]].sort((a, b) => a.size - b.size);
   const allergens = productAllergens(product);
 
   // A worked table so the bundle maths is visible before anyone commits to a
@@ -68,12 +73,23 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
             <p className="mt-5 text-body-l text-cocoa">{product.description}</p>
 
             <p className="mt-8 font-display text-display-s">
-              {product.offerSummary}
+              {summarizeTiers(tiers)}
             </p>
 
             {/* --- Ordering --- */}
             <div className="mt-10">
-              <AddToCart product={product} />
+              {product.isAvailable &&
+              product.variants.some((v) => v.isAvailable) ? (
+                <AddToCart product={product} />
+              ) : (
+                <div className="border border-rule bg-ivory p-6">
+                  <h2 className="text-display-s">Sold out for now</h2>
+                  <p className="mt-3 text-body-m text-cocoa">
+                    Everything here is made by hand in small batches, so it does
+                    run out. Come back soon, or find us at the market.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="mt-8 border-t border-rule pt-6">

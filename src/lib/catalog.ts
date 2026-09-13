@@ -40,8 +40,6 @@ export type Product = {
   /** Two or three sentences, used on the detail page. */
   description: string;
   basePriceCents: number;
-  /** Customer-facing summary of the bundle offers, e.g. "3 for $5 · 10 for $15". */
-  offerSummary: string;
   variants: Variant[];
   isAvailable: boolean;
 };
@@ -55,7 +53,6 @@ export const PRODUCTS: Product[] = [
     description:
       "Each bon-bon is filled and finished by hand, in batches small enough to check every piece. The fillings are made from all-natural ingredients, with no preservatives and no additives.",
     basePriceCents: 200,
-    offerSummary: "$2 each · 3 for $5 · 10 for $15",
     isAvailable: true,
     variants: [
       {
@@ -84,7 +81,6 @@ export const PRODUCTS: Product[] = [
     description:
       "Moulded and wrapped by hand from Belcolade Lait Selection 34% Milk Couverture — genuine Belgian couverture at 34% cocoa, per Belcolade's own product specification. No preservatives, no additives.",
     basePriceCents: 700,
-    offerSummary: "$7 each · 2 for $10",
     isAvailable: true,
     variants: [
       {
@@ -118,7 +114,18 @@ export const PRODUCTS: Product[] = [
 export const getProduct = (slug: string): Product | undefined =>
   PRODUCTS.find((p) => p.slug === slug);
 
-/** Every allergen present anywhere in a product, deduplicated. */
+/**
+ * Every allergen present anywhere in a product, deduplicated.
+ *
+ * DELIBERATELY counts sold-out flavors too. Marking Peanut Butter sold out
+ * does not empty the kitchen of peanuts, and this line sits next to a
+ * shared-kitchen cross-contact statement. Narrowing it to whatever happens to
+ * be in stock today would quietly drop a warning on the one direction where
+ * being wrong is dangerous. Over-stating costs a customer a purchase;
+ * under-stating could cost someone far more.
+ *
+ * Do not "fix" this to filter by availability.
+ */
 export const productAllergens = (product: Product): Allergen[] => [
   ...new Set(product.variants.flatMap((v) => v.containsAllergens)),
 ];

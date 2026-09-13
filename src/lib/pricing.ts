@@ -296,6 +296,20 @@ export function findFreeUpgrade(
   return null;
 }
 
+/**
+ * The customer-facing one-liner for a tier table, e.g. "$2 each · 3 for $5".
+ *
+ * Derived rather than stored. The owner can edit tiers from the admin, and a
+ * hand-written summary sitting next to an edited tier table is a promise the
+ * checkout will not keep.
+ */
+export function summarizeTiers(tiers: readonly BundleTier[]): string {
+  return [...tiers]
+    .sort((a, b) => a.size - b.size)
+    .map((tier) => tier.label)
+    .join(" · ");
+}
+
 /** Format integer cents as a display string. Presentation only. */
 export function formatCents(cents: number): string {
   const sign = cents < 0 ? "-" : "";

@@ -11,7 +11,13 @@
  * assert on an exact order.
  */
 
-import { priceCart, type CartItem, type ProductKind } from "./pricing.ts";
+import {
+  priceCart,
+  TIERS_BY_KIND,
+  type BundleTier,
+  type CartItem,
+  type ProductKind,
+} from "./pricing.ts";
 import { quoteDelivery, totalPackagedWeightOz } from "./delivery.ts";
 import { calculateTax, type TaxConfig } from "./tax.ts";
 import type { DeliveryConfig } from "@/config/delivery";
@@ -50,6 +56,12 @@ export type VariantRecord = {
 export type CheckoutDeps = {
   lookupVariant: (variantId: string) => VariantRecord | undefined;
   deliveryConfig: DeliveryConfig;
+  /**
+   * Bundle prices in force right now. Injected rather than imported, because
+   * the owner can edit them from the admin and the charge has to use what
+   * they last saved. Omitted means the defaults in code.
+   */
+  tiersByKind?: Record<ProductKind, readonly BundleTier[]>;
   taxConfig: TaxConfig;
   /** Injected so tests get a deterministic reference. */
   makeReference: () => string;
@@ -228,7 +240,7 @@ export function validateCheckout(
   }
 
   // ---- Recompute every figure -------------------------------------------
-  const price = priceCart(items);
+  const price = priceCart(items, deps.tiersByKind ?? TIERS_BY_KIND);
 
   const weight = totalPackagedWeightOz(
     items.map((item) => ({

@@ -7,11 +7,11 @@ import { DeliveryNotice } from "./DeliveryNotice";
 import { DeliveryEstimator } from "./DeliveryEstimator";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import {
-  TIERS_BY_KIND,
   findFreeUpgrade,
   formatCents,
   type ProductKind,
 } from "@/lib/pricing";
+import { useTiers, useVariantLookup } from "./StorefrontSettings";
 
 const KIND_LABEL: Record<ProductKind, { one: string; many: string }> = {
   bonbon: { one: "piece", many: "pieces" },
@@ -65,6 +65,28 @@ function QuantityControl({
 
 export function CartContents() {
   const { cart, price, hydrated, remove, clear, itemCount } = useCart();
+  const tiersByKind = useTiers();
+  const lookup = useVariantLookup();
+
+  /**
+   * Lines the cart can no longer price, because the owner has marked the
+   * flavor sold out since it was added.
+   *
+   * They are pulled out and shown on their own rather than left to vanish.
+   * Silently dropping something a customer chose, and quietly reducing their
+   * total, is the kind of thing that reads as a bug or a trick.
+   */
+  const unavailableLines = hydrated
+    ? cart.lines.filter((line) => !lookup(line.variantId)?.isAvailable)
+    : [];
+
+  // Counts only what is actually being charged for. itemCount includes the
+  // sold-out lines, and a heading reading "7 items" above a total for three
+  // of them is the kind of arithmetic a customer stops to re-check.
+  const pricedCount = price.groups.reduce(
+    (sum, group) => sum + group.price.quantity,
+    0,
+  );
 
   // Before the stored cart is read there is nothing truthful to show. A
   // skeleton avoids flashing "Your cart is empty" at someone who has six
@@ -106,13 +128,12 @@ export function CartContents() {
     <div className="mx-auto max-w-4xl px-gutter py-section">
       <p className="label-caps">Your cart</p>
       <h1 className="mt-3 text-display-xl">
-        {itemCount} item{itemCount === 1 ? "" : "s"}
+        {pricedCount} item{pricedCount === 1 ? "" : "s"}
       </h1>
 
       {price.groups.map((group) => {
         const label = KIND_LABEL[group.kind];
-        const tiers = TIERS_BY_KIND[group.kind];
-        const upgrade = findFreeUpgrade(group.price.quantity, tiers);
+        const upgrade = findFreeUpgrade(group.price.quantity, tiersByKind[group.kind]);
 
         return (
           <section key={group.kind} className="mt-12">
@@ -190,6 +211,48 @@ export function CartContents() {
         );
       })}
 
+      {/* ---- Sold out since it was added ---- */}
+      {unavailableLines.length > 0 && (
+        <section className="mt-12 border border-error bg-ivory p-6" role="status">
+          <h2 className="text-display-s text-error">No longer available</h2>
+          <p className="mt-3 text-body-m">
+            {unavailableLines.length === 1 ? "This has" : "These have"} sold out
+            since you added {unavailableLines.length === 1 ? "it" : "them"}, so{" "}
+            {unavailableLines.length === 1 ? "it is" : "they are"} not counted
+            in your total.
+          </p>
+          <ul className="mt-4 divide-y divide-rule border-y border-rule">
+            {unavailableLines.map((line) => {
+              const resolved = findVariant(line.variantId);
+              const name = resolved
+                ? `${resolved.variant.name} — ${resolved.product.name}`
+                : line.variantId;
+              return (
+                <li
+                  key={line.variantId}
+                  className="flex flex-wrap items-center justify-between gap-4 py-4"
+                >
+                  <p className="text-body-m">
+                    {name}{" "}
+                    <span className="text-body-s text-cocoa">
+                      &times; {line.quantity}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => remove(line.variantId)}
+                    className="text-body-s text-cocoa-deep underline underline-offset-4 hover:text-error"
+                  >
+                    Remove
+                    <span className="sr-only"> {name}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* ---- Totals ---- */}
       <div className="mt-section border-t border-rule-strong pt-6">
         <dl className="space-y-3">
@@ -214,15 +277,29 @@ export function CartContents() {
         </div>
 
         <div className="mt-8">
-          <Link
-            href="/checkout"
-            className="inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream no-underline transition-colors duration-200 hover:bg-cocoa"
-          >
-            Checkout
-          </Link>
-          <p className="mt-3 text-body-s text-cocoa">
-            Delivery and sales tax are calculated at the next step.
-          </p>
+          {price.groups.length > 0 ? (
+            <>
+              <Link
+                href="/checkout"
+                className="inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream no-underline transition-colors duration-200 hover:bg-cocoa"
+              >
+                Checkout
+              </Link>
+              <p className="mt-3 text-body-s text-cocoa">
+                Delivery and sales tax are calculated at the next step.
+              </p>
+            </>
+          ) : (
+            // Everything in the cart has sold out. Offering a checkout button
+            // that the server would only refuse is worse than saying so here.
+            <p className="text-body-m">
+              There is nothing left to check out.{" "}
+              <Link href="/shop" className="text-gold-deep">
+                Browse the shop
+              </Link>
+              .
+            </p>
+          )}
         </div>
 
         <div className="mt-8 border-t border-rule pt-6">

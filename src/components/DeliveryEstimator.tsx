@@ -2,9 +2,9 @@
 
 import { useMemo, useState, useId } from "react";
 import { useCart } from "./useCart";
-import { DELIVERY_CONFIG } from "@/config/delivery";
+import { useDeliveryConfig, useVariantWeights } from "./StorefrontSettings";
 import { quoteDelivery, totalPackagedWeightOz } from "@/lib/delivery";
-import { findVariant, BRAND } from "@/lib/catalog";
+import { BRAND } from "@/lib/catalog";
 import { formatCents } from "@/lib/pricing";
 
 /**
@@ -20,31 +20,36 @@ import { formatCents } from "@/lib/pricing";
  */
 export function DeliveryEstimator() {
   const { cart, price } = useCart();
+  // Rates, the free-delivery ZIP list and packaged weights all come from the
+  // admin, so they are read here rather than imported from the bundle.
+  const deliveryConfig = useDeliveryConfig();
+  const weights = useVariantWeights();
   const [zip, setZip] = useState("");
-  const [state, setState] = useState(DELIVERY_CONFIG.allowedState);
+  const [state, setState] = useState(deliveryConfig.allowedState);
   const zipId = useId();
   const stateId = useId();
 
-  // Null while any SKU is unweighed, which is every SKU today. With no weight
-  // tiers configured that does not affect the quote — see config/delivery.ts.
+  // Null while any SKU is unweighed, which is every SKU until the owner
+  // weighs one. With no weight tiers configured that does not affect the
+  // quote — see config/delivery.ts.
   const totalWeightOz = useMemo(
     () =>
       totalPackagedWeightOz(
         cart.lines.map((line) => ({
           quantity: line.quantity,
-          packagedWeightOz: findVariant(line.variantId)?.variant.packagedWeightOz ?? null,
+          packagedWeightOz: weights[line.variantId] ?? null,
         })),
       ),
-    [cart.lines],
+    [cart.lines, weights],
   );
 
   const quote = useMemo(() => {
     if (zip.trim() === "") return null;
     return quoteDelivery(
       { address: { state, zip }, subtotalCents: price.subtotalCents, totalWeightOz },
-      DELIVERY_CONFIG,
+      deliveryConfig,
     );
-  }, [zip, state, price.subtotalCents, totalWeightOz]);
+  }, [zip, state, price.subtotalCents, totalWeightOz, deliveryConfig]);
 
   const invalid = quote?.kind === "unavailable";
 
@@ -94,7 +99,7 @@ export function DeliveryEstimator() {
         {quote === null && (
           <p className="text-body-s text-cocoa">
             Enter a ZIP code to see delivery. We deliver within{" "}
-            {DELIVERY_CONFIG.allowedStateName} only.
+            {deliveryConfig.allowedStateName} only.
           </p>
         )}
 
@@ -137,7 +142,7 @@ export function DeliveryEstimator() {
             {quote.centsToFreeDelivery !== null && (
               <p className="mt-1 text-body-s text-gold-deep">
                 Add {formatCents(quote.centsToFreeDelivery)} more for free
-                delivery in {DELIVERY_CONFIG.freeCountyName}.
+                delivery in {deliveryConfig.freeCountyName}.
               </p>
             )}
             <p className="mt-4 flex items-baseline justify-between gap-4 border-t border-rule pt-4 text-body-m">

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useCart } from "./useCart";
 import { makeVariantId, ALLERGEN_LABEL, type Product } from "@/lib/catalog";
 import {
-  TIERS_BY_KIND,
   priceQuantity,
   findFreeUpgrade,
   formatCents,
+  summarizeTiers,
 } from "@/lib/pricing";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
+import { useTiers } from "./StorefrontSettings";
 
 /**
  * Quantity stepper.
@@ -77,7 +78,7 @@ export function AddToCart({ product }: { product: Product }) {
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
-  const tiers = TIERS_BY_KIND[product.kind];
+  const tiers = useTiers()[product.kind];
   const unit = product.kind === "bonbon" ? "piece" : "bar";
 
   const totalSelected = useMemo(
@@ -192,7 +193,7 @@ export function AddToCart({ product }: { product: Product }) {
           </>
         ) : (
           <p className="text-body-s text-cocoa">
-            {product.offerSummary}. Bundles apply automatically, and a{" "}
+            {summarizeTiers(tiers)}. Bundles apply automatically, and a{" "}
             {product.kind === "bonbon" ? "box" : "pair"} may mix flavors.
           </p>
         )}

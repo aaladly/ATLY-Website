@@ -1,8 +1,20 @@
 import { BRAND } from "@/lib/catalog";
+import { formatCents } from "@/lib/pricing";
+import type { DeliveryConfig } from "@/config/delivery";
 import { Wordmark } from "./Wordmark";
 import { SocialLinks } from "./SocialLinks";
 
-export function SiteFooter() {
+/**
+ * Delivery rules arrive as a prop rather than being imported, so the footer
+ * quotes whatever the owner last set in the admin. Passed down from the root
+ * layout, which already has them, instead of making the whole footer a client
+ * component for the sake of two numbers.
+ */
+export function SiteFooter({ delivery }: { delivery: DeliveryConfig }) {
+  const freeLine = delivery.freeCounty.alwaysFree
+    ? `Free delivery throughout ${delivery.freeCountyName}, which we deliver by hand.`
+    : `Free delivery on orders of ${formatCents(delivery.freeCounty.thresholdCents)} or more in ${delivery.freeCountyName}, which we deliver by hand.`;
+
   return (
     <footer className="mt-section border-t border-rule-strong">
       <div className="mx-auto max-w-6xl px-gutter py-14">
@@ -22,11 +34,11 @@ export function SiteFooter() {
           <div>
             <h2 className="label-caps">Delivery</h2>
             <p className="mt-4 text-body-m">
-              We deliver within {BRAND.delivery.stateOnly} only.
+              We deliver within {delivery.allowedStateName} only.
             </p>
             <p className="mt-3 text-body-s text-cocoa">
-              Free delivery throughout {BRAND.delivery.freeCounty}, which we
-              deliver by hand. $5.99 elsewhere in {BRAND.delivery.stateOnly}.
+              {freeLine} {formatCents(delivery.standardCents)} elsewhere in{" "}
+              {delivery.allowedStateName}.
             </p>
           </div>
         </div>

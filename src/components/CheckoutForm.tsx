@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "./useCart";
-import { placeOrder, quoteOrder } from "@/app/checkout/actions";
+import { placeOrder, quoteOrder } from "@/app/(site)/checkout/actions";
 import type { CheckoutRequest, ValidationIssue } from "@/lib/checkout";
 import { formatCents } from "@/lib/pricing";
 import { BRAND } from "@/lib/catalog";
@@ -35,7 +35,20 @@ export function CheckoutForm() {
   const router = useRouter();
   const [form, setForm] = useState(EMPTY_FORM);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
-  const [quoted, setQuoted] = useState<{ key: string; totals: Totals } | null>(null);
+  /**
+   * The last answer from the server, and which request it was an answer to.
+   *
+   * A refused quote keeps its reason rather than being thrown away. The server
+   * knows the moment a ZIP is typed that a flavor has sold out or that an
+   * address is out of state; making the customer fill in the rest of the form
+   * and press Place order to be told is a small cruelty the code was doing for
+   * no reason.
+   */
+  const [quoted, setQuoted] = useState<
+    | { key: string; totals: Totals }
+    | { key: string; issues: ValidationIssue[] }
+    | null
+  >(null);
   const [pending, startTransition] = useTransition();
 
   const field = (name: keyof typeof EMPTY_FORM) => ({
@@ -106,7 +119,9 @@ export function CheckoutForm() {
       giftNote: "",
     }).then((result) => {
       if (cancelled) return;
-      setQuoted(result.ok ? { key, totals: result.totals } : null);
+      setQuoted(
+        result.ok ? { key, totals: result.totals } : { key, issues: result.issues },
+      );
     });
 
     return () => {
@@ -115,7 +130,10 @@ export function CheckoutForm() {
   }, [shouldQuote, quoteKey]);
 
   // Derived, not stored: clearing the ZIP hides the totals without an effect.
-  const totals = shouldQuote && quoted?.key === quoteKey ? quoted.totals : null;
+  // A result for a previous ZIP is never shown against a new one.
+  const current = shouldQuote && quoted?.key === quoteKey ? quoted : null;
+  const totals = current && "totals" in current ? current.totals : null;
+  const quoteIssues = current && "issues" in current ? current.issues : [];
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -256,6 +274,28 @@ export function CheckoutForm() {
               <dd className="text-display-s tabular-nums">{formatCents(totals.totalCents)}</dd>
             </div>
           </dl>
+        ) : quoteIssues.length > 0 ? (
+          /* The server has already refused this order. Saying so here, while
+             they are still looking at the ZIP field, beats letting them fill
+             in the rest and press the button to find out. Inside the
+             aria-live=polite section on purpose: this can change on a
+             keystroke, and role=alert would interrupt on every one. */
+          <div className="mt-4 border-2 border-error bg-ivory p-5">
+            {quoteIssues.map((problem, index) => (
+              <p
+                key={`${problem.field}-${index}`}
+                className={index === 0 ? "text-body-m text-error" : "mt-2 text-body-m text-error"}
+              >
+                {problem.message}
+              </p>
+            ))}
+            <p className="mt-3 text-body-s text-cocoa">
+              <Link href="/cart" className="text-cocoa-deep">
+                Back to your cart
+              </Link>{" "}
+              to change it.
+            </p>
+          </div>
         ) : (
           <p className="mt-4 text-body-s text-cocoa">
             Enter your ZIP code to see delivery and tax.

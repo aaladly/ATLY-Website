@@ -2,11 +2,15 @@ import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { Wordmark } from "@/components/Wordmark";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
-import { PRODUCTS, BRAND, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
+import { BRAND, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
 import { PRODUCT_IMAGE } from "@/lib/images";
-import { TIERS_BY_KIND, priceQuantity, formatCents } from "@/lib/pricing";
+import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
+import { getStorefrontSettings } from "@/lib/settings/resolve";
 
-export default function Home() {
+export default async function Home() {
+  // Products and prices as the owner has them set, not as they were compiled.
+  const { products, tiers: tiersByKind } = await getStorefrontSettings();
+
   return (
     <main>
       {/* ---------------- Hero ---------------- */}
@@ -148,11 +152,13 @@ export default function Home() {
         </div>
 
         <div className="mt-12 grid gap-10 sm:grid-cols-2 sm:gap-8">
-          {PRODUCTS.map((product) => {
-            const tiers = TIERS_BY_KIND[product.kind];
+          {products.map((product) => {
+            const tiers = tiersByKind[product.kind];
             const best = [...tiers].sort((a, b) => b.size - a.size)[0];
             const bestPrice = priceQuantity(best.size, tiers);
             const allergens = productAllergens(product);
+            const soldOut =
+              !product.isAvailable || product.variants.every((v) => !v.isAvailable);
 
             return (
               <article key={product.slug} className="flex flex-col">
@@ -169,16 +175,26 @@ export default function Home() {
                   </div>
                   <h3 className="mt-6 text-display-m group-hover:text-gold-deep">
                     {product.name}
+                    {soldOut && (
+                      <span className="ml-3 align-middle text-label uppercase text-error">
+                        Sold out
+                      </span>
+                    )}
                   </h3>
                 </Link>
                 <p className="mt-2 text-body-m text-cocoa">{product.tagline}</p>
-                <p className="mt-5 text-body-m">{product.offerSummary}</p>
-                <p className="mt-2 text-body-s text-gold-deep">
-                  Best value: {best.label} — save{" "}
-                  {formatCents(bestPrice.savingsCents)}
-                </p>
+                <p className="mt-5 text-body-m">{summarizeTiers(tiers)}</p>
+                {bestPrice.savingsCents > 0 && (
+                  <p className="mt-2 text-body-s text-gold-deep">
+                    Best value: {best.label} — save{" "}
+                    {formatCents(bestPrice.savingsCents)}
+                  </p>
+                )}
                 <p className="mt-4 text-body-s text-cocoa">
-                  {product.variants.map((v) => v.name).join(" · ")}
+                  {product.variants
+                    .filter((v) => v.isAvailable)
+                    .map((v) => v.name)
+                    .join(" · ")}
                 </p>
                 <p className="mt-2 text-body-s text-cocoa">
                   Contains{" "}

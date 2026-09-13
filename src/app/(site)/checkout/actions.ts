@@ -2,36 +2,13 @@
 
 import { validateCheckout, type CheckoutRequest, type ValidationIssue } from "@/lib/checkout";
 import { makeOrderReference } from "@/lib/orderReference";
-import { DELIVERY_CONFIG } from "@/config/delivery";
-import { NJ_TAX } from "@/lib/tax";
-import { MAX_LINE_QUANTITY } from "@/lib/cart";
-import { VARIANT_INDEX } from "@/lib/catalog";
+import { checkoutDeps } from "@/lib/checkoutDeps";
 import { orderStore } from "@/lib/orders/store";
 import { isPaymentConfigured } from "@/lib/payments";
 
 export type PlaceOrderResult =
   | { ok: true; reference: string }
   | { ok: false; issues: ValidationIssue[] };
-
-/** Shared so a quote and a placed order can never diverge in how they compute. */
-const deps = (makeReference: () => string) => ({
-  lookupVariant: (variantId: string) => {
-    const found = VARIANT_INDEX.get(variantId);
-    if (!found) return undefined;
-    return {
-      variantId,
-      productName: found.product.name,
-      variantName: found.variant.name,
-      kind: found.product.kind,
-      packagedWeightOz: found.variant.packagedWeightOz,
-      isAvailable: found.product.isAvailable && found.variant.isAvailable,
-    };
-  },
-  deliveryConfig: DELIVERY_CONFIG,
-  taxConfig: NJ_TAX,
-  makeReference,
-  maxLineQuantity: MAX_LINE_QUANTITY,
-});
 
 /**
  * Place an order.
@@ -41,7 +18,7 @@ const deps = (makeReference: () => string) => ({
  * delivery, tax, or whether we deliver to an address at all.
  */
 export async function placeOrder(request: CheckoutRequest): Promise<PlaceOrderResult> {
-  const result = validateCheckout(request, deps(() => makeOrderReference()));
+  const result = validateCheckout(request, await checkoutDeps(() => makeOrderReference()));
 
   if (!result.ok) return result;
 
@@ -87,7 +64,7 @@ export async function placeOrder(request: CheckoutRequest): Promise<PlaceOrderRe
  * one number and charged another.
  */
 export async function quoteOrder(request: CheckoutRequest) {
-  const result = validateCheckout(request, deps(() => "QUOTE"));
+  const result = validateCheckout(request, await checkoutDeps(() => "QUOTE"));
   if (!result.ok) return result;
 
   // Only the figures. A quote has no reference, and echoing the contact and

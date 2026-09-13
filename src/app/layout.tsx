@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Work_Sans } from "next/font/google";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import "./globals.css";
 
 // Serif display, matching the logo's classical serif treatment.
@@ -27,24 +25,20 @@ export const metadata: Metadata = {
     "Handmade Belgian chocolate from a family business in New Jersey. Pure chocolate, real ingredients, a bigger purpose.",
 };
 
+/**
+ * The HTML shell, and nothing else.
+ *
+ * The shop's header, footer and skip link moved to src/app/(site)/layout.tsx
+ * in Step 9, when the admin arrived. An order-management screen wearing the
+ * shop's navigation is a screen where "Add to cart" sits next to "Mark
+ * delivered", and the footer advertises delivery rates at someone who is
+ * trying to pack a box. The two are different tools and now have different
+ * chrome; the URLs did not change.
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${workSans.variable}`}>
-      <body className="flex min-h-screen flex-col">
-        {/* Keyboard and screen-reader users should not have to walk the nav
-            on every page. */}
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-cocoa-deep focus:px-4 focus:py-2 focus:text-cream"
-        >
-          Skip to content
-        </a>
-        <SiteHeader />
-        <div id="main" className="flex-1">
-          {children}
-        </div>
-        <SiteFooter />
-      </body>
+      <body className="flex min-h-screen flex-col">{children}</body>
     </html>
   );
 }
