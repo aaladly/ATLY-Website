@@ -214,17 +214,14 @@ export function CartContents() {
         </div>
 
         <div className="mt-8">
-          {/* Checkout is Step 7. Disabled with the reason stated rather than a
-              button that goes nowhere. */}
-          <button
-            type="button"
-            disabled
-            className="inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream disabled:cursor-not-allowed disabled:opacity-40"
+          <Link
+            href="/checkout"
+            className="inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream no-underline transition-colors duration-200 hover:bg-cocoa"
           >
             Checkout
-          </button>
+          </Link>
           <p className="mt-3 text-body-s text-cocoa">
-            Checkout and delivery pricing open shortly.
+            Delivery and sales tax are calculated at the next step.
           </p>
         </div>
 

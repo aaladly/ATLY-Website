@@ -131,7 +131,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 4 | Storefront pages | Complete |
 | 5 | Cart | Complete |
 | 6 | Delivery rules engine | Complete — weight tiers pending weights |
-| 7 | Checkout and payment | Not started |
+| 7 | Checkout and payment | Partial — blocked on Stripe, Supabase, Resend |
 | 8 | About Us and brand story | Not started |
 | 9 | Admin | Not started |
 | 10 | Compliance, SEO, launch | Not started |
@@ -150,6 +150,17 @@ Tracked here so they are not silently guessed at.
   apply across a product kind, not per flavor. (Step 3)
 - **8-for-$10 bon-bon tier** — replaced by 10-for-$15. Eight pieces now price as
   `2x3 + 2x1` = $14.
+
+**Blocking Step 7**
+
+- **Stripe keys** — `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and
+  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in `.env.local`. Until these exist,
+  checkout validates an order fully and then refuses it rather than recording
+  something nobody paid for.
+- **A Supabase project** — orders currently live in an in-memory Map that is lost
+  on restart and is not shared between serverless instances. It is a development
+  stand-in, not a launch configuration.
+- **A Resend key** — no confirmation email is sent yet.
 
 **Open**
 
