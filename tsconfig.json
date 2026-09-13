@@ -10,6 +10,10 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    // The .mts test files import "./pricing.ts" with the extension, because
+    // that is what Node's native TypeScript stripping requires at runtime.
+    // Safe here: noEmit is true, so nothing is written out.
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,

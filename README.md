@@ -55,6 +55,7 @@ Then open http://localhost:3100.
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint (`next lint` was removed in Next 16) |
 | `npm run check:contrast` | WCAG AA audit of the palette; non-zero exit on failure |
+| `npm test` | Pricing engine unit tests (Node built-in runner, no dependency) |
 
 ### Environment
 
@@ -84,10 +85,16 @@ calculators. Values are passed in.
 ## The product line
 
 **Bon-bons** — hand-filled, two flavors: Salted Caramel, Peanut Butter.
-Pricing: 3 for $5 · 8 for $10.
+Pricing (Schedule A): **$2 each · 3 for $5 · 10 for $15.** The 10-for-$15 rate is
+the floor — larger orders are multiples of it, never a deeper discount, because a
+hundred bon-bons is a hundred times the handwork.
 
 **Bars** — Plain, Hazelnut, Mixed Nuts.
-Pricing: $7 each · 2 for $10.
+Pricing: **$7 each · 2 for $10.**
+
+Either line may mix flavors freely, so bundles apply across the whole quantity of a
+product kind rather than per flavor. Pricing lives in `src/lib/pricing.ts` and in the
+`pricing_rules` table, editable from the admin without a deploy.
 
 Made with Belcolade Lait Selection 34% Milk Couverture — genuine Belgian couverture, 34%
 cocoa per Belcolade's specification. Fillings are handmade from all-natural ingredients.
@@ -118,7 +125,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | --- | --- | --- |
 | 1 | Scaffold and guardrails | Complete |
 | 2 | Brand system + `/styleguide` | Awaiting approval |
-| 3 | Catalog schema and pricing engine | Not started |
+| 3 | Catalog schema and pricing engine | Complete |
 | 4 | Storefront pages | Not started |
 | 5 | Cart | Not started |
 | 6 | Delivery rules engine | Not started |
@@ -131,19 +138,44 @@ instructions, and a full stop to wait for `CONTINUE`.
 
 Tracked here so they are not silently guessed at.
 
-- **Logo wordmark** — supplied logo reads "ARTISAN CHOCOLATES"; every site use must read
-  "BELGIAN CHOCOLATE". Corrected file, or rebuild the lockup in SVG? (Step 2)
-- **Bon-bon boxes** — fixed 3/8-piece SKUs or any quantity with bundle pricing? Can a box
-  mix flavors? (Step 3)
-- **Bar bundle rule** — how 2-for-$10 applies to odd counts; whether a pair may mix
-  flavors. (Step 3)
-- **Packaged weights** — real ounces for every SKU. (Step 3, needed by Step 6)
-- **Delivery pricing** — $5.99 flat vs weight-tiered; the tier table; Hunterdon
-  free-delivery threshold; hand-delivery vs carrier; any NJ no-go areas. (Step 6)
+**Resolved**
+
+- **Bon-bon pricing** — Schedule A: $2 each, 3 for $5, 10 for $15, with the 10-box rate
+  as the floor. (Step 3)
+- **Bar pricing** — unchanged at $7 each, 2 for $10. The $7 price already sits at ~483%
+  markup on a $1.20 loaded cost, which is the 500% standard the owner cited. (Step 3)
+- **Mixed flavors** — permitted in both a bon-bon box and a bar pair. Bundles therefore
+  apply across a product kind, not per flavor. (Step 3)
+- **8-for-$10 bon-bon tier** — replaced by 10-for-$15. Eight pieces now price as
+  `2x3 + 2x1` = $14.
+
+**Open**
+
+- **Labor time per unit** — hands-on minutes for a bon-bon and for a bar. Not needed to
+  build, but it determines whether Schedule A is profitable. At an assumed 5 minutes a
+  bon-bon, $2 a piece returns about $14 per labor hour before overhead; a bar returns
+  about $174. If the real figure is 2 minutes, Schedule A looks very different.
+- **Packaging cost basis** — is $0.10 per package per *box* or per *piece*? Costed as
+  per box.
+- **Is the 500% standard on ingredients only, or fully loaded including labor?**
+- **Packaged weights** — shipping ounces for a filled 3-box, a filled 10-box, and a
+  wrapped bar. Chocolate weight is known (9g a bon-bon, ~27.5g a bar); packaged weight
+  is not. Blocks Step 6.
+- **Logo wordmark** — the supplied logo reads "ARTISAN CHOCOLATES"; every site use must
+  read "BELGIAN CHOCOLATE". Corrected file, or rebuild the lockup in SVG? Rebuilding
+  needs the original artwork in hand. (Step 2, blocks Step 4)
+- **Assets** — `public/images/` and `reference/` are still empty. Step 4 is
+  photography-led and cannot start without them.
+- **Delivery pricing** — $5.99 flat vs weight-tiered; the tier table; whether the
+  Hunterdon free-delivery benefit is over-$50 only; hand-delivery vs carrier; any NJ
+  areas excluded. (Step 6)
 - **Warm weather** — shipping warnings and/or seasonal delivery pauses? (Step 6)
 - **NJ sales tax** — New Jersey exempts food but carves candy back out, so chocolate is
   likely taxable at 6.625%. Confirm the Stripe Tax product code with an accountant.
   (Step 7)
-- **Kitchen licensing** — cottage food permit or licensed commercial kitchen? This affects
-  what labeling is required and, potentially, whether online sales and delivery are
+- **Kitchen licensing** — cottage food permit or licensed commercial kitchen? This
+  affects required labelling and, potentially, whether online sales and delivery are
   permitted at all. Confirm with the NJ Department of Health early, not at Step 10.
+- **Ingredient lists and cross-contact statement** — must come from the owner. Allergen
+  tags are currently seeded only from stated facts: the couverture is a milk chocolate,
+  and the nut products are named for their nuts. (Step 10)
