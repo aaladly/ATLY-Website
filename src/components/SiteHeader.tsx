@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Wordmark } from "./Wordmark";
 import { CartBadge } from "./CartBadge";
 
-// "Our Story" is deliberately absent until Step 8 builds /about. A nav link
-// to a route that does not exist is a 404 in the primary navigation, which is
-// worse than a nav with one item.
-const NAV = [{ href: "/shop", label: "Shop" }];
+const NAV = [
+  { href: "/shop", label: "Shop" },
+  { href: "/about", label: "Our Story" },
+];
 
 /**
  * Site header. Mobile-first: the primary customer is standing at the market

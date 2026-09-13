@@ -189,3 +189,23 @@ export const variantLookup = (id: string) => {
     isAvailable: found.product.isAvailable && found.variant.isAvailable,
   };
 };
+
+// ---------------------------------------------------------------------------
+// The founder's story
+// ---------------------------------------------------------------------------
+/**
+ * VERBATIM. Do not edit, shorten, reorder, or rewrite any of this.
+ *
+ * These are the founder's own words, supplied by the owner. The working
+ * agreement is explicit: handle it with restraint and dignity, do not embellish
+ * it, do not rewrite it into marketing voice, and never add claims about health
+ * benefits of chocolate. It reads as a personal letter because it is one.
+ *
+ * If it ever needs to change, the owner changes it — not us.
+ */
+export const FOUNDER_STORY: readonly string[] = [
+  "This chocolate is more than just a treat — it's a part of my journey.",
+  "After my cancer diagnosis, I discovered a new love: real chocolate.",
+  "I'm a dentist by profession, but life taught me even more about what truly matters — health, hope, and the little things that bring joy.",
+  "ATLY is born from that journey: real ingredients, pure chocolate, and a second chance to share something beautiful.",
+] as const;

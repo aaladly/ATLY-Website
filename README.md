@@ -132,7 +132,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 5 | Cart | Complete |
 | 6 | Delivery rules engine | Complete — weight tiers pending weights |
 | 7 | Checkout and payment | Partial — blocked on Stripe, Supabase, Resend |
-| 8 | About Us and brand story | Not started |
+| 8 | About Us and brand story | Complete |
 | 9 | Admin | Not started |
 | 10 | Compliance, SEO, launch | Not started |
 
@@ -163,6 +163,11 @@ Tracked here so they are not silently guessed at.
 - **A Resend key** — no confirmation email is sent yet.
 
 **Open**
+
+- **Signing the founder's story** — the About page story is written in the first
+  person and is currently unsigned. A signature would normally close it, but we
+  will not invent a name on the most personal page of the site. Tell us whether
+  to sign it, and with what. (Step 8)
 
 - **Labor time per unit** — hands-on minutes for a bon-bon and for a bar. Not needed to
   build, but it determines whether Schedule A is profitable. At an assumed 5 minutes a

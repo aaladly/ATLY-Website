@@ -84,6 +84,14 @@ export default function Home() {
             Everything is made by hand, in batches small enough to check every
             piece.
           </p>
+          <p className="mt-9">
+            <Link
+              href="/about"
+              className="label-caps text-gold-deep underline underline-offset-8"
+            >
+              Read our story
+            </Link>
+          </p>
         </div>
 
         <div className="mx-auto mt-14 grid max-w-4xl gap-5 sm:grid-cols-3">
