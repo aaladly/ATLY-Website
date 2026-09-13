@@ -83,16 +83,27 @@
     letter-spacing: -0.01em;
   }
 
-  /* Keyboard focus must always be visible. Never remove without replacing. */
+  /* Keyboard focus must always be visible. Never remove without replacing.
+     The colour is indirected through --focus-ring so that any dark surface can
+     override it for its subtree. WCAG requires a focus indicator to clear 3:1
+     against what it sits on, and gold-deep on cocoa-deep is only 2.26:1. */
+  :root {
+    --focus-ring: var(--color-gold-deep); /* 5.04:1 on cream */
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-gold-deep);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
     border-radius: 2px;
   }
 
-  /* On dark surfaces the gold ring disappears; cream carries 11.39:1 there. */
-  .on-dark :focus-visible {
-    outline-color: var(--color-cream);
+  /* Dark surfaces switch the ring to cream, 11.39:1 on cocoa-deep.
+     .on-dark covers dark sections; .bg-cocoa-deep catches standalone dark
+     controls such as the primary button, which have no dark ancestor and
+     would otherwise inherit the gold ring and fail. */
+  .on-dark,
+  .bg-cocoa-deep {
+    --focus-ring: var(--color-cream);
   }
 
   /* Motion: slow, minimal fades only — and honour the OS setting. */

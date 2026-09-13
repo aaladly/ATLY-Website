@@ -126,7 +126,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 1 | Scaffold and guardrails | Complete |
 | 2 | Brand system + `/styleguide` | Awaiting approval |
 | 3 | Catalog schema and pricing engine | Complete |
-| 4 | Storefront pages | Not started |
+| 4 | Storefront pages | Complete |
 | 5 | Cart | Not started |
 | 6 | Delivery rules engine | Not started |
 | 7 | Checkout and payment | Not started |
