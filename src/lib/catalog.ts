@@ -145,3 +145,45 @@ export const BRAND = {
     standardCents: 599,
   },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Variant lookup
+// ---------------------------------------------------------------------------
+// The cart stores variant ids and nothing else, so it needs a stable id and a
+// way back to the product. "bon-bons/salted-caramel" is readable in devtools
+// and in a stored cart, which makes debugging an order far easier than a uuid.
+
+export const makeVariantId = (productSlug: string, variantSlug: string): string =>
+  `${productSlug}/${variantSlug}`;
+
+export type ResolvedVariant = {
+  id: string;
+  product: Product;
+  variant: Variant;
+};
+
+export const VARIANT_INDEX: ReadonlyMap<string, ResolvedVariant> = new Map(
+  PRODUCTS.flatMap((product) =>
+    product.variants.map((variant) => {
+      const id = makeVariantId(product.slug, variant.slug);
+      return [id, { id, product, variant }] as const;
+    }),
+  ),
+);
+
+export const findVariant = (id: string): ResolvedVariant | undefined =>
+  VARIANT_INDEX.get(id);
+
+/** Every id the catalog currently knows. A stored cart is filtered against this. */
+export const KNOWN_VARIANT_IDS: ReadonlySet<string> = new Set(VARIANT_INDEX.keys());
+
+/** The shape lib/cart.ts wants, without cart.ts having to import the catalog. */
+export const variantLookup = (id: string) => {
+  const found = VARIANT_INDEX.get(id);
+  if (!found) return undefined;
+  return {
+    kind: found.product.kind,
+    flavorName: found.variant.name,
+    isAvailable: found.product.isAvailable && found.variant.isAvailable,
+  };
+};

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "./Wordmark";
+import { CartBadge } from "./CartBadge";
 
 // "Our Story" is deliberately absent until Step 8 builds /about. A nav link
 // to a route that does not exist is a 404 in the primary navigation, which is
@@ -36,18 +37,7 @@ export function SiteHeader() {
               </li>
             ))}
             <li>
-              {/*
-                Cart is not wired until Step 5. Rendered as a disabled control
-                rather than a link that goes nowhere — a dead link is worse
-                than an honestly unavailable one.
-              */}
-              <span
-                className="label-caps text-cocoa/50"
-                aria-disabled="true"
-                title="Ordering opens soon"
-              >
-                Cart
-              </span>
+              <CartBadge />
             </li>
           </ul>
         </nav>

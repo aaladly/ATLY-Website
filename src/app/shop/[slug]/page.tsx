@@ -3,12 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Photo } from "@/components/Photo";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
+import { AddToCart } from "@/components/AddToCart";
 import {
   PRODUCTS,
   getProduct,
   productAllergens,
   ALLERGEN_LABEL,
-  BRAND,
 } from "@/lib/catalog";
 import { PRODUCT_IMAGE } from "@/lib/images";
 import { TIERS_BY_KIND, priceQuantity, formatCents } from "@/lib/pricing";
@@ -71,53 +71,9 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
               {product.offerSummary}
             </p>
 
-            {/* --- Flavors --- */}
-            <h2 className="label-caps mt-10">Flavors</h2>
-            <ul className="mt-3 divide-y divide-rule border-y border-rule">
-              {product.variants.map((variant) => (
-                <li
-                  key={variant.slug}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3"
-                >
-                  <span className="text-body-m">{variant.name}</span>
-                  <span className="text-body-s text-cocoa">
-                    Contains{" "}
-                    {variant.containsAllergens
-                      .map((a) => ALLERGEN_LABEL[a].toLowerCase())
-                      .join(", ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-body-s text-cocoa">
-              A {product.kind === "bonbon" ? "box" : "pair"} may mix flavors
-              freely — the bundle price applies either way.
-            </p>
-
-            {/* --- Ordering ---
-                Not wired until Step 5. Rendered as a disabled button with the
-                reason stated, rather than a button that silently does nothing. */}
+            {/* --- Ordering --- */}
             <div className="mt-10">
-              <button
-                type="button"
-                disabled
-                className="inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-              >
-                Add to cart
-              </button>
-              <p className="mt-3 text-body-s text-cocoa">
-                Online ordering opens shortly. Until then you can find us at the
-                market, or message us on{" "}
-                <a
-                  href={BRAND.social.instagram}
-                  className="text-gold-deep"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Instagram
-                </a>
-                .
-              </p>
+              <AddToCart product={product} />
             </div>
 
             <div className="mt-8 border-t border-rule pt-6">
