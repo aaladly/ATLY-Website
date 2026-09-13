@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCart } from "./useCart";
 import { findVariant } from "@/lib/catalog";
 import { DeliveryNotice } from "./DeliveryNotice";
+import { DeliveryEstimator } from "./DeliveryEstimator";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import {
   TIERS_BY_KIND,
@@ -206,13 +207,11 @@ export function CartContents() {
               </dd>
             </div>
           )}
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-body-s text-cocoa">Delivery</dt>
-            <dd className="text-body-s text-cocoa">
-              Calculated at checkout
-            </dd>
-          </div>
         </dl>
+
+        <div className="mt-8 border-t border-rule pt-6">
+          <DeliveryEstimator />
+        </div>
 
         <div className="mt-8">
           {/* Checkout is Step 7. Disabled with the reason stated rather than a

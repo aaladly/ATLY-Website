@@ -128,7 +128,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 3 | Catalog schema and pricing engine | Complete |
 | 4 | Storefront pages | Complete |
 | 5 | Cart | Complete |
-| 6 | Delivery rules engine | Not started |
+| 6 | Delivery rules engine | Partial — weight tiers blocked |
 | 7 | Checkout and payment | Not started |
 | 8 | About Us and brand story | Not started |
 | 9 | Admin | Not started |
