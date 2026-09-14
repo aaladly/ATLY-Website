@@ -119,6 +119,16 @@
 /* --- Primitives ------------------------------------------------------ */
 
 @layer components {
+  /* A "← back" link.
+     Left as bare text these are around 14px tall, which is a fine target for a
+     mouse and a poor one for a thumb on a phone at a market table. The text
+     stays exactly as small as it looks; only the hit area grows. */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem; /* 44px */
+  }
+
   .label-caps {
     font-family: var(--font-body);
     font-size: var(--text-label);

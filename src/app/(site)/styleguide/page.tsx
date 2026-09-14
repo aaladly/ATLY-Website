@@ -3,7 +3,7 @@ import { contrastRatio, aaVerdict } from "@/lib/contrast";
 import { PALETTE, ORNAMENT, SURFACES, TYPE_SCALE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Styleguide — ATLY Belgian Chocolate",
+  title: "Styleguide",
   description: "Internal design token reference.",
   robots: { index: false, follow: false },
 };
@@ -262,14 +262,14 @@ export default function Styleguide() {
           <fieldset className="border border-rule p-5">
             <legend className="label-caps px-2">Box size</legend>
             <div className="space-y-3">
-              {["3 pieces — $5", "8 pieces — $10"].map((o, i) => (
+              {["3 pieces — $5", "10 pieces — $15"].map((o, i) => (
                 <div key={o} className="flex items-center gap-3">
                   <input
                     type="radio"
                     id={`sg-box-${i}`}
                     name="sg-box"
                     defaultChecked={i === 0}
-                    className="h-4 w-4 accent-cocoa-deep"
+                    className="h-5 w-5 accent-cocoa-deep"
                   />
                   <label htmlFor={`sg-box-${i}`} className="text-body-m">
                     {o}
@@ -280,7 +280,7 @@ export default function Styleguide() {
           </fieldset>
 
           <div className="flex items-start gap-3">
-            <input type="checkbox" id="sg-ack" className="mt-1 h-4 w-4 accent-cocoa-deep" />
+            <input type="checkbox" id="sg-ack" className="mt-1 h-5 w-5 accent-cocoa-deep" />
             <label htmlFor="sg-ack" className="text-body-m">
               I understand these are made in a kitchen that handles peanuts and tree nuts.
             </label>

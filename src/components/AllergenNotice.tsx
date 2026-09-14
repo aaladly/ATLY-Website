@@ -30,6 +30,17 @@ export function AllergenNotice({
     CROSS_CONTACT_STATEMENT !== null &&
     products.every((p) => p.variants.every((v) => v.ingredients !== null));
 
+  /**
+   * The heading level depends on where this is rendered.
+   *
+   * On /allergens these sections sit directly under the page's h1, so they are
+   * h2. Inside a product page they sit under that page's "Allergens" h2, so
+   * they are h3. Hardcoding either one leaves a skipped level on the other
+   * page, which is how a screen-reader user loses the outline.
+   */
+  const Heading = compact ? "h3" : "h2";
+  const headingClass = compact ? "label-caps" : "text-display-s";
+
   return (
     <div className={compact ? "" : "space-y-10"}>
       {products.map((product) => (
@@ -37,7 +48,7 @@ export function AllergenNotice({
           {/* The compact variant sits inside a product page's own "Allergens"
               section, which has already said which product this is. Repeating
               the name adds a heading level and no information. */}
-          {!compact && <h3 className="text-display-s">{product.name}</h3>}
+          {!compact && <Heading className={headingClass}>{product.name}</Heading>}
 
           <ul className="mt-3 divide-y divide-rule border-y border-rule">
             {product.variants.map((variant) => (
@@ -75,9 +86,7 @@ export function AllergenNotice({
 
       {/* ---- Cross-contact ---- */}
       <section className={compact ? "mt-6" : ""}>
-        <h3 className={compact ? "label-caps" : "text-display-s"}>
-          Made in a shared kitchen
-        </h3>
+        <Heading className={headingClass}>Made in a shared kitchen</Heading>
 
         {CROSS_CONTACT_STATEMENT !== null ? (
           <p className="mt-3 text-body-m">{CROSS_CONTACT_STATEMENT}</p>

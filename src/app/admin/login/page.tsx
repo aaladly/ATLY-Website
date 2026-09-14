@@ -56,7 +56,7 @@ export default async function AdminLoginPage() {
       )}
 
       <p className="mt-10 text-body-s">
-        <Link href="/" className="text-cocoa-deep">
+        <Link href="/" className="back-link text-cocoa-deep">
           &larr; Back to the shop
         </Link>
       </p>

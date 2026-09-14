@@ -60,8 +60,8 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
     <main>
       <ProductJsonLd product={product} tiers={tiers} />
 
-      <div className="mx-auto max-w-6xl px-gutter pt-10">
-        <Link href="/shop" className="label-caps text-cocoa no-underline hover:text-gold-deep">
+      <div className="mx-auto max-w-6xl px-gutter pt-6">
+        <Link href="/shop" className="back-link label-caps text-cocoa no-underline hover:text-gold-deep">
           &larr; Shop
         </Link>
       </div>

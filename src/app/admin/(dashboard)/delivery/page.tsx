@@ -55,7 +55,7 @@ export default async function AdminDeliveryPage() {
             Free delivery in {delivery.freeCountyName}
           </legend>
 
-          <label className="flex items-center gap-3 text-body-m">
+          <label className="flex min-h-11 items-center gap-3 text-body-m">
             <input
               type="checkbox"
               name="alwaysFree"
@@ -77,7 +77,7 @@ export default async function AdminDeliveryPage() {
               defaultValue={centsToDollarInput(delivery.freeCounty.thresholdCents)}
               className="h-11 w-32 rounded-sm border border-cocoa bg-cream px-4 text-body-m"
             />
-            <label className="mt-4 flex items-center gap-3 text-body-s">
+            <label className="mt-4 flex min-h-11 items-center gap-3 text-body-s">
               <input
                 type="checkbox"
                 name="thresholdInclusive"

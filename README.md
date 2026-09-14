@@ -60,6 +60,12 @@ Then open http://localhost:3100.
 | `npm run admin:password` | Make an admin password hash. Never stores or prints the password |
 | `npm run admin:secret` | Make an admin session secret |
 
+`scripts/audit-page.js` is not an npm script — paste it into the browser console on
+any page and call `__audit()`. It checks heading structure, accessible names, form
+labels, duplicate ids, landmarks, tap-target size and horizontal overflow. Worth running
+at a phone width as well as a desktop one; that is where tap targets and overflow
+actually misbehave.
+
 ### Environment
 
 Copy `.env.example` to `.env.local` and fill in values there. `.env.example` holds

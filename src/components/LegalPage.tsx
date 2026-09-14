@@ -55,7 +55,7 @@ export function LegalPage({
       <div className="mt-12 space-y-10">{children}</div>
 
       <p className="mt-section text-body-s">
-        <Link href="/" className="text-cocoa-deep">
+        <Link href="/" className="back-link text-cocoa-deep">
           &larr; Back to the shop
         </Link>
       </p>

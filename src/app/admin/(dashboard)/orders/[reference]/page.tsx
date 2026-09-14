@@ -29,7 +29,7 @@ export default async function AdminOrderPage({
   return (
     <div>
       <p className="text-body-s">
-        <Link href="/admin/orders" className="text-cocoa no-underline hover:text-gold-deep">
+        <Link href="/admin/orders" className="back-link text-cocoa no-underline hover:text-gold-deep">
           &larr; All orders
         </Link>
       </p>

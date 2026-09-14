@@ -45,7 +45,7 @@ export default async function AdminProductsPage() {
             >
               <legend className="label-caps px-2">{product.name}</legend>
 
-              <label className="flex items-center gap-3 text-body-m">
+              <label className="flex min-h-11 items-center gap-3 text-body-m">
                 <input
                   type="checkbox"
                   name={`available:${product.slug}`}
@@ -89,7 +89,7 @@ export default async function AdminProductsPage() {
                             </span>
                           </td>
                           <td className="py-3 pr-4">
-                            <label className="flex items-center gap-2 text-body-s">
+                            <label className="flex min-h-11 items-center gap-2 text-body-s">
                               <input
                                 type="checkbox"
                                 name={`available:${key}`}

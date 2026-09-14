@@ -42,7 +42,7 @@ export default async function AllergensPage() {
         </p>
         <SocialLinks className="mt-6" />
         <p className="mt-8 text-body-s">
-          <Link href="/shop" className="text-cocoa-deep">
+          <Link href="/shop" className="back-link text-cocoa-deep">
             &larr; Back to the shop
           </Link>
         </p>
