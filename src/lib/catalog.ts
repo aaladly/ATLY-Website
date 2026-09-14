@@ -28,6 +28,23 @@ export type Variant = {
   /** TODO: owner to weigh a packaged unit. Blocks Step 6 delivery tiers. */
   packagedWeightOz: number | null;
   containsAllergens: Allergen[];
+  /**
+   * The full ingredient list, in descending order by weight, exactly as the
+   * owner supplies it.
+   *
+   * null means NOT YET SUPPLIED — which is different from "no ingredients",
+   * and the site says so rather than printing an empty list. Every one is null
+   * today.
+   *
+   * !! NEVER WRITE THESE FROM GUESSWORK !! -----------------------------------
+   * An ingredient list is a food-safety document. A plausible-sounding guess
+   * at what is in a salted caramel is the single most dangerous thing this
+   * codebase could contain: someone with a nut allergy reads it and decides
+   * whether to eat. The owner writes these, from the actual recipes and the
+   * actual labels on the tubs in their kitchen, and nobody else touches them.
+   * --------------------------------------------------------------------------
+   */
+  ingredients: readonly string[] | null;
   isAvailable: boolean;
 };
 
@@ -61,6 +78,7 @@ export const PRODUCTS: Product[] = [
         unitWeightGrams: 9,
         packagedWeightOz: null,
         containsAllergens: ["milk"],
+        ingredients: null,
         isAvailable: true,
       },
       {
@@ -69,6 +87,7 @@ export const PRODUCTS: Product[] = [
         unitWeightGrams: 9,
         packagedWeightOz: null,
         containsAllergens: ["milk", "peanuts"],
+        ingredients: null,
         isAvailable: true,
       },
     ],
@@ -89,6 +108,7 @@ export const PRODUCTS: Product[] = [
         unitWeightGrams: 27.5,
         packagedWeightOz: null,
         containsAllergens: ["milk"],
+        ingredients: null,
         isAvailable: true,
       },
       {
@@ -97,6 +117,7 @@ export const PRODUCTS: Product[] = [
         unitWeightGrams: 27.5,
         packagedWeightOz: null,
         containsAllergens: ["milk", "tree_nuts"],
+        ingredients: null,
         isAvailable: true,
       },
       {
@@ -105,6 +126,7 @@ export const PRODUCTS: Product[] = [
         unitWeightGrams: 27.5,
         packagedWeightOz: null,
         containsAllergens: ["milk", "tree_nuts"],
+        ingredients: null,
         isAvailable: true,
       },
     ],
@@ -154,6 +176,58 @@ export const BRAND = {
     standardCents: 599,
   },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Allergen disclosure
+// ---------------------------------------------------------------------------
+
+/**
+ * The shared-kitchen cross-contact statement.
+ *
+ * null means NOT YET SUPPLIED. The site says the disclosure is still being
+ * prepared rather than printing nothing, because silence reads as "there is
+ * no cross-contact risk" — and in a kitchen that handles peanuts, hazelnuts
+ * and mixed nuts on the same equipment, that would be a false reassurance
+ * given to exactly the people who cannot afford one.
+ *
+ * !! THE OWNER WRITES THIS. NOT US. !! ---------------------------------------
+ * It is a statement of fact about their kitchen: which equipment is shared,
+ * whether nut and non-nut batches are separated, whether surfaces are cleaned
+ * between. We do not know any of that, and a confident guess would be read as
+ * a guarantee.
+ *
+ * The usual form is something like "Made in a kitchen that also handles X, Y
+ * and Z" — but the specifics are theirs.
+ * ---------------------------------------------------------------------------
+ */
+export const CROSS_CONTACT_STATEMENT: string | null = null;
+
+/** True once every sellable flavor has an ingredient list. */
+export const ingredientsComplete = (products: readonly Product[] = PRODUCTS): boolean =>
+  products.every((product) =>
+    product.variants.every((variant) => variant.ingredients !== null),
+  );
+
+/** Flavors still waiting on an ingredient list, by customer-facing name. */
+export const variantsMissingIngredients = (
+  products: readonly Product[] = PRODUCTS,
+): string[] =>
+  products.flatMap((product) =>
+    product.variants
+      .filter((variant) => variant.ingredients === null)
+      .map((variant) => `${product.name} — ${variant.name}`),
+  );
+
+/**
+ * Whether the allergen disclosure is complete enough to sell behind.
+ *
+ * Both halves are required. Ingredient lists without a cross-contact
+ * statement understate the risk in a shared kitchen; a cross-contact
+ * statement without ingredient lists tells a customer to be careful without
+ * telling them what of.
+ */
+export const allergenDisclosureComplete = (): boolean =>
+  ingredientsComplete() && CROSS_CONTACT_STATEMENT !== null;
 
 // ---------------------------------------------------------------------------
 // Variant lookup

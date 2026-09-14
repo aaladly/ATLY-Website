@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Photo } from "@/components/Photo";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
 import { AddToCart } from "@/components/AddToCart";
+import { AllergenNotice } from "@/components/AllergenNotice";
+import { ProductJsonLd } from "@/components/StructuredData";
 import {
   PRODUCTS,
   getProduct,
@@ -28,6 +30,11 @@ export async function generateMetadata({
   return {
     title: product.name,
     description: product.description,
+    // No openGraph block. Declaring one here would replace the layout's, and
+    // the generated og:image is attached to that — a product page with no
+    // link preview image is the last page on the site that should have one.
+    // The title and description above flow into Open Graph by themselves.
+    alternates: { canonical: `/shop/${product.slug}` },
   };
 }
 
@@ -51,6 +58,8 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
 
   return (
     <main>
+      <ProductJsonLd product={product} tiers={tiers} />
+
       <div className="mx-auto max-w-6xl px-gutter pt-10">
         <Link href="/shop" className="label-caps text-cocoa no-underline hover:text-gold-deep">
           &larr; Shop
@@ -161,20 +170,20 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
         </div>
 
         {/* --- Allergens ---
-            TODO: Step 10 replaces this with the owner's exact ingredient lists
-            and the shared-kitchen cross-contact statement. Nothing here is
-            written from guesswork: the couverture is a milk chocolate, and the
-            nut products are named for their nuts. */}
+            Nothing here is written from guesswork. The tags come from stated
+            facts: the couverture is a milk chocolate, and the nut products are
+            named for their nuts. The ingredient lists and the cross-contact
+            statement come from the owner, and until they do, the panel says so
+            in plain words rather than leaving a reassuring blank. */}
         <div className="mt-section border border-rule bg-ivory p-7">
-          <h2 className="label-caps">Allergens</h2>
+          <h2 className="text-display-s">Allergens</h2>
           <p className="mt-3 text-body-m">
             {product.name} contain{" "}
             {allergens.map((a) => ALLERGEN_LABEL[a].toLowerCase()).join(", ")}.
           </p>
-          <p className="mt-3 text-body-s text-cocoa">
-            TODO: full ingredient lists and our shared-kitchen statement are
-            being finalised and will appear here before ordering opens.
-          </p>
+          <div className="mt-5">
+            <AllergenNotice products={[product]} compact />
+          </div>
         </div>
       </section>
     </main>

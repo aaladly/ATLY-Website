@@ -8,7 +8,8 @@
     "start": "next start --port 3100",
     "lint": "eslint",
     "check:contrast": "node scripts/contrast.mjs",
-    "admin:password": "node scripts/admin-password.mjs",
+    "check:launch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-launch.mjs",
+    "admin:password": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/admin-password.mjs",
     "admin:secret": "node scripts/admin-secret.mjs",
     "test": "node --test \"src/**/*.test.mts\""
   },

@@ -55,6 +55,7 @@ Then open http://localhost:3100.
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint (`next lint` was removed in Next 16) |
 | `npm run check:contrast` | WCAG AA audit of the palette; non-zero exit on failure |
+| `npm run check:launch` | Is this ready to take money from a stranger? Non-zero exit while not |
 | `npm test` | Unit tests (Node built-in runner, no dependency) |
 | `npm run admin:password` | Make an admin password hash. Never stores or prints the password |
 | `npm run admin:secret` | Make an admin session secret |
@@ -109,9 +110,9 @@ Made with Belcolade Lait Selection 34% Milk Couverture — genuine Belgian couve
 cocoa per Belcolade's specification. Fillings are handmade from all-natural ingredients.
 No preservatives, no additives. Everything is made by hand in small batches.
 
-> **Allergens:** peanut butter, hazelnut, and mixed nuts are major allergens. Ingredient
-> lists and the shared-kitchen cross-contact statement are supplied by the owner in
-> Step 10 — never written from guesswork.
+> **Allergens:** peanut butter, hazelnut, and mixed nuts are major allergens. The
+> ingredient lists and the shared-kitchen cross-contact statement are still outstanding
+> and block launch — see [Allergens](#allergens) below.
 
 ## Delivery
 
@@ -167,6 +168,65 @@ the same effective settings. Two guards refuse a save rather than letting it thr
 > says so on every page, and the banner disappears by itself when
 > `SETTINGS_ARE_DURABLE` flips in `src/lib/settings/store.ts`.
 
+## Allergens
+
+Made in one family kitchen that handles peanuts, hazelnuts and mixed nuts.
+
+The allergen **tags** on the site come from facts the owner has stated: the couverture
+is a milk chocolate, and the nut products are named for their nuts. The **ingredient
+lists** and the **shared-kitchen cross-contact statement** do not exist yet, and are
+`null` in `src/lib/catalog.ts`.
+
+Nothing fills that gap with a plausible guess. `/allergens` and every product page say,
+in plain words, that we are not claiming the chocolate is safe for someone with a nut
+allergy and that they should ask first. Silence would have been the dangerous option —
+an allergen section with no cross-contact warning reads as "we checked, there is no
+risk".
+
+`npm run check:launch` fails while either is missing.
+
+> **Never write an ingredient list or an allergen statement from guesswork.** Someone
+> reads it and decides whether to eat. The owner writes these, from the actual recipes
+> and the actual labels in their kitchen.
+
+## Going live
+
+```bash
+npm run check:launch
+```
+
+Lists everything still outstanding, separated into blockers and things merely worth
+knowing, and exits non-zero while any blocker stands. Run it before every deploy.
+
+**Deployment checklist**
+
+1. **Environment.** Set every name in `.env.example` in the Vercel project, for
+   Production and Preview. `NEXT_PUBLIC_SITE_URL` must be the real address — until it
+   is, the site emits localhost canonicals and tells crawlers not to index it.
+   Values are read with variable expansion, so a `$` in a value is rewritten on the way
+   in; `npm run admin:password` and `npm run admin:secret` emit values that avoid it.
+2. **Database.** Run `supabase/migrations/` in order. Neither migration has ever been
+   executed — orders and admin settings are still in memory.
+3. **Stripe.** Live keys, and a webhook pointed at the deployment. Confirm the Stripe
+   Tax product code for candy with an accountant first; New Jersey exempts food but
+   carves candy back out.
+4. **DNS.** Point the domain at Vercel, add `www` as a redirect to the apex (or the
+   reverse — pick one and make the other redirect, so there is a single canonical
+   host). Wait for the certificate before announcing anything.
+5. **Verify the live site.** `robots.txt` should now allow crawling; check
+   `/sitemap.xml` lists the real domain; paste a product URL into a link-preview
+   checker and confirm the card renders.
+6. **Search Console.** Add the property, submit the sitemap.
+7. **Place a real order** with a real card, then refund it. This is the only test that
+   exercises Stripe, Resend, the database and the admin at once.
+
+**Not installed, on purpose**
+
+No analytics of any kind. Nothing measures what a visitor looks at, and the privacy page
+says so — which stops being true the moment anything is added, so add the tool and edit
+that page in the same commit. If it is wanted, a privacy-respecting option that needs no
+cookie banner is the one to pick.
+
 ## Build status
 
 Built one numbered step at a time. Each step ends with a file list, verification
@@ -183,7 +243,7 @@ instructions, and a full stop to wait for `CONTINUE`.
 | 7 | Checkout and payment | Partial — blocked on Stripe, Supabase, Resend |
 | 8 | About Us and brand story | Complete |
 | 9 | Admin | Complete — settings are in memory until Supabase |
-| 10 | Compliance, SEO, launch | Not started |
+| 10 | Compliance, SEO, launch | Complete — launch blocked on the owner, see `npm run check:launch` |
 
 ## Open questions
 
@@ -251,4 +311,20 @@ Tracked here so they are not silently guessed at.
   permitted at all. Confirm with the NJ Department of Health early, not at Step 10.
 - **Ingredient lists and cross-contact statement** — must come from the owner. Allergen
   tags are currently seeded only from stated facts: the couverture is a milk chocolate,
-  and the nut products are named for their nuts. (Step 10)
+  and the nut products are named for their nuts. **Blocks launch.** (Step 10)
+- **The real domain** — `NEXT_PUBLIC_SITE_URL`. Everything absolute the site emits is
+  built from it, and it is a placeholder today. **Blocks launch.** (Step 10)
+- **A public contact email** — the refunds page currently tells customers to message on
+  Instagram, which is honest but not good enough for an order that went wrong. (Step 10)
+- **A business address, or not** — an Organization record is published in the structured
+  data without one. A LocalBusiness record with a real address would get a map listing,
+  but the kitchen is a family home and nobody has said whether that address should be
+  public. (Step 10)
+- **The commercial terms** — how long a return can be asked for, whether an order can be
+  cancelled after it is placed, which state's law governs, delivery times, and what
+  happens in hot weather. Each is marked on the page it belongs to rather than invented.
+  **Blocks launch** until the pages are reviewed and `LEGAL_REVIEWED` is flipped in
+  `src/lib/site.ts`. (Step 10)
+- **Analytics** — none is installed, and the privacy page says so. If any is wanted, a
+  privacy-respecting option that needs no cookie banner is the one to pick, and the
+  privacy page changes in the same commit. (Step 10)

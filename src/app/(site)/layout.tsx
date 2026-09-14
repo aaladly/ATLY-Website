@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StorefrontSettingsProvider } from "@/components/StorefrontSettings";
+import { OrganizationJsonLd } from "@/components/StructuredData";
 import { getStorefrontSettings, toClientSettings } from "@/lib/settings/resolve";
 
 /**
@@ -24,6 +25,8 @@ export default async function SiteLayout({
 
   return (
     <StorefrontSettingsProvider value={toClientSettings(settings)}>
+      <OrganizationJsonLd />
+
       {/* Keyboard and screen-reader users should not have to walk the nav
           on every page. */}
       <a

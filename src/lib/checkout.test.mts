@@ -56,6 +56,7 @@ const DELIVERY: DeliveryConfig = {
   freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
   freeCountyName: "Hunterdon County",
   freeCountyZips: ["08822"],
+  freeCountyZipsVerified: true,
   weightTiers: [],
   excludedZips: [],
 };

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Our Story",
   description:
     "ATLY began with one wish: chocolate made from real ingredients. A family business in New Jersey, making Belgian chocolate by hand in small batches.",
+  alternates: { canonical: "/about" },
 };
 
 /**

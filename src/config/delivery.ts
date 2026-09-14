@@ -56,6 +56,16 @@ export type DeliveryConfig = {
   freeCountyZips: readonly string[];
 
   /**
+   * Whether a person has checked the free-delivery ZIP list against USPS.
+   *
+   * Flip to true only after someone has actually done it. `npm run
+   * check:launch` fails while this is false, because the list decides who is
+   * charged for delivery and who is not, and "probably right" is not a
+   * standard to take money against.
+   */
+  freeCountyZipsVerified: boolean;
+
+  /**
    * Weight-based pricing.
    *
    * EMPTY ON PURPOSE. The brief says delivery is $5.99 flat AND that it varies
@@ -130,6 +140,9 @@ export const DELIVERY_CONFIG: DeliveryConfig = {
     "08889", // Whitehouse Station
     "08858", // Oldwick
   ],
+
+  // Not checked against USPS. See the UNVERIFIED warning above.
+  freeCountyZipsVerified: false,
 
   weightTiers: [],
   excludedZips: [],

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Shop",
   description:
     "Hand-filled bon-bons and hand-moulded bars, made from Belgian couverture in small batches. Delivered within New Jersey.",
+  alternates: { canonical: "/shop" },
 };
 
 export default async function Shop() {

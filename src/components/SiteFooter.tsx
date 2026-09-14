@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BRAND } from "@/lib/catalog";
 import { formatCents } from "@/lib/pricing";
 import type { DeliveryConfig } from "@/config/delivery";
@@ -46,11 +47,31 @@ export function SiteFooter({ delivery }: { delivery: DeliveryConfig }) {
         {/*
           No year in the copyright line. These pages are prerendered, so a
           hardcoded year goes stale silently and a build-time year is a lie
-          about when the page was served. TODO: Step 10 adds the privacy,
-          terms, and refund links here.
+          about when the page was served.
         */}
-        <div className="mt-14 border-t border-rule pt-6 text-body-s text-cocoa">
+        <div className="mt-14 flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-rule pt-6 text-body-s text-cocoa">
           <p>&copy; ATLY Belgian Chocolate</p>
+          <nav aria-label="Legal and allergens">
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {[
+                // Allergens first, and not buried among the legal links: it is
+                // the one a customer may genuinely need before they order.
+                { href: "/allergens", label: "Allergens" },
+                { href: "/privacy", label: "Privacy" },
+                { href: "/terms", label: "Terms" },
+                { href: "/refunds", label: "Returns" },
+              ].map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-cocoa no-underline hover:text-gold-deep"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
     </footer>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { Wordmark } from "@/components/Wordmark";
@@ -6,6 +7,14 @@ import { BRAND, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
 import { PRODUCT_IMAGE } from "@/lib/images";
 import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
+
+// Title and description are inherited from the root layout — the home page is
+// the one place where the default IS the right answer. Only the canonical
+// needs stating, so a link with tracking parameters on it still resolves to
+// one address.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   // Products and prices as the owner has them set, not as they were compiled.
