@@ -78,12 +78,52 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <Section heading="What we do not do">
+      {/*
+        !! THIS SECTION IS A FACTUAL CLAIM, AND IT IS CHECKABLE !! ------------
+        Every sentence below is true of this codebase today and was verified
+        against a running page: document.cookie is empty for a customer, there
+        are no third-party origins in the network log, and the fonts are
+        self-hosted by next/font.
+
+        It is ALSO the reason this site has no cookie banner. There is nothing
+        to consent to, and a banner with nothing behind it is friction for
+        nobody's benefit.
+
+        If analytics, an advertising pixel, embedded video, a map, or a
+        third-party font ever gets added, this section stops being true and a
+        consent banner becomes necessary — non-essential scripts blocked until
+        the visitor chooses, Reject as easy as Accept, nothing pre-ticked.
+        Change this page in the same commit as the script. A stale privacy
+        policy is not an oversight; it is a false statement about what you do
+        with someone's data.
+        ---------------------------------------------------------------------
+      */}
+      <Section heading="Cookies, and why there is no cookie banner">
         <p>
-          There is no analytics on this site. No tracking pixels, no advertising
-          tags, nothing measuring what you look at. The only cookie this site
-          sets is the one that keeps the shop owner signed in to their own
-          admin, and you will never be given one.
+          <strong>We do not give you any cookies.</strong> Not one — not for
+          analytics, not for advertising, not for remembering you.
+        </p>
+        <p>
+          There is a single cookie in this whole website, and it is the one that
+          keeps the shop owner signed in to their own admin screens. You will
+          never be issued it.
+        </p>
+        <p>
+          Your cart is kept in your own browser&rsquo;s storage rather than in a
+          cookie, which is why it survives a refresh and disappears when you
+          clear your browsing data. It is never sent to us until you check out.
+        </p>
+        <p>
+          There is also no analytics on this site. No tracking pixels, no
+          advertising tags, nothing counting or measuring what you look at.
+          Nothing on these pages is loaded from anyone else&rsquo;s server —
+          even the fonts are served from here — so visiting this site does not
+          tell any other company that you did.
+        </p>
+        <p>
+          That is why you were not asked to accept cookies when you arrived.
+          There is nothing to accept. If that ever changes, this page changes
+          first.
         </p>
       </Section>
 

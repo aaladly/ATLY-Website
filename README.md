@@ -242,10 +242,22 @@ knowing, and exits non-zero while any blocker stands. Run it before every deploy
 
 **Not installed, on purpose**
 
-No analytics of any kind. Nothing measures what a visitor looks at, and the privacy page
-says so — which stops being true the moment anything is added, so add the tool and edit
-that page in the same commit. If it is wanted, a privacy-respecting option that needs no
-cookie banner is the one to pick.
+No analytics of any kind, no advertising pixels, and no third-party requests at all —
+`next/font` self-hosts the fonts, so visiting the site does not tell anyone else that you
+did. Verified on a running page: `document.cookie` is empty for a customer, and there are
+zero third-party origins in the network log.
+
+**There is also no cookie banner, and that is correct.** A customer receives no cookies.
+The only cookie in the project is the owner's admin session (`src/lib/admin/auth.ts`);
+the cart lives in `localStorage`. With nothing to consent to, a banner is friction for
+no benefit, and `/privacy` says so in a section a visitor can actually find.
+
+> **Adding analytics is not a one-line change.** The moment a script measures a visitor,
+> the privacy page becomes false and a consent banner becomes necessary — non-essential
+> scripts blocked until the visitor chooses, loaded dynamically rather than as static
+> tags, "Reject all" exactly as prominent and as few clicks as "Accept all", nothing
+> pre-ticked, a rejection that sticks without re-prompting, and a way to withdraw consent
+> later from the footer. Budget for all of that, or pick a tool that needs none of it.
 
 ## Build status
 
