@@ -376,6 +376,21 @@ export function CheckoutForm() {
         {pending ? "Placing your order…" : "Place order"}
       </button>
 
+      {/* Belt and braces with the checkbox above: the tick is the record that
+          they were shown the allergen notice, and this is the plain statement
+          of what pressing the button means. */}
+      <p className="mt-4 text-body-s text-cocoa">
+        By placing your order you agree to our{" "}
+        <Link href="/terms" className="text-cocoa-deep">
+          Terms &amp; Conditions
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="text-cocoa-deep">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+
       <p className="mt-4 text-body-s text-cocoa">
         <Link href="/cart" className="text-cocoa-deep">
           Back to cart

@@ -29,7 +29,7 @@ are never opened, read from, or used as a source of patterns. See `CLAUDE.md`.
 | Database | Supabase (Postgres) |
 | Payments | Stripe + Stripe Tax (NJ sales tax) |
 | Email | Resend |
-| Hosting | Vercel |
+| Hosting | Hostinger |
 
 > **Next.js 16 note:** conventions in this version differ from older App Router code and
 > from model training data. Read `node_modules/next/dist/docs/` before writing routing,
@@ -220,8 +220,7 @@ knowing, and exits non-zero while any blocker stands. Run it before every deploy
 
 **Deployment checklist**
 
-1. **Environment.** Set every name in `.env.example` in the Vercel project, for
-   Production and Preview. `NEXT_PUBLIC_SITE_URL` must be the real address — until it
+1. **Environment.** Set every name in `.env.example` in the Hostinger environment. `NEXT_PUBLIC_SITE_URL` must be the real address — until it
    is, the site emits localhost canonicals and tells crawlers not to index it.
    Values are read with variable expansion, so a `$` in a value is rewritten on the way
    in; `npm run admin:password` and `npm run admin:secret` emit values that avoid it.
@@ -230,7 +229,7 @@ knowing, and exits non-zero while any blocker stands. Run it before every deploy
 3. **Stripe.** Live keys, and a webhook pointed at the deployment. Confirm the Stripe
    Tax product code for candy with an accountant first; New Jersey exempts food but
    carves candy back out.
-4. **DNS.** Point the domain at Vercel, add `www` as a redirect to the apex (or the
+4. **DNS.** Point the domain at Hostinger, add `www` as a redirect to the apex (or the
    reverse — pick one and make the other redirect, so there is a single canonical
    host). Wait for the certificate before announcing anything.
 5. **Verify the live site.** `robots.txt` should now allow crawling; check

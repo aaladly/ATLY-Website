@@ -10,8 +10,13 @@ import { EMPTY_OVERRIDES, type SettingsOverrides } from "./types";
  * is no Supabase project connected yet. Overrides are held in a module-level
  * object, which means:
  *   - every change is lost when the server restarts
- *   - nothing is shared between serverless instances, so on Vercel a price
- *     changed on one instance is invisible to the next request
+ *   - a redeploy loses everything taken since the last one, and nobody is
+ *     watching for that
+ *
+ * Hosting is Hostinger, i.e. one long-running Node process rather than a fleet
+ * of serverless instances, so the data at least survives BETWEEN requests. That
+ * makes the failure quieter, not smaller: it works perfectly right up until a
+ * restart, which is the worst way for a data store to be wrong.
  *
  * The admin UI says so on every page, in as many words, so nobody changes a
  * price and believes it stuck. Replace this with Supabase against the

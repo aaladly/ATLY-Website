@@ -4,6 +4,7 @@ import { formatCents } from "@/lib/pricing";
 import type { DeliveryConfig } from "@/config/delivery";
 import { Wordmark } from "./Wordmark";
 import { SocialLinks } from "./SocialLinks";
+import { CookieSettingsLink } from "./CookieConsent";
 
 /**
  * Delivery rules arrive as a prop rather than being imported, so the footer
@@ -70,6 +71,12 @@ export function SiteFooter({ delivery }: { delivery: DeliveryConfig }) {
                   </Link>
                 </li>
               ))}
+              {/* Renders only when there is analytics to consent to, and only
+                  once JavaScript is running — it reopens a dialog, so it
+                  cannot work without either. */}
+              <li>
+                <CookieSettingsLink />
+              </li>
             </ul>
           </nav>
         </div>

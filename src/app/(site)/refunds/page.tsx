@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalPage, Section } from "@/components/LegalPage";
 import { SocialLinks } from "@/components/SocialLinks";
 import { BUSINESS } from "@/lib/site";
-import { REPORT_WINDOW_HOURS } from "@/lib/terms";
+import { REPORT_WINDOW_HOURS } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Returns and refunds",

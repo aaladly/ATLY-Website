@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StorefrontSettingsProvider } from "@/components/StorefrontSettings";
 import { OrganizationJsonLd } from "@/components/StructuredData";
+import { CookieConsent } from "@/components/CookieConsent";
 import { getStorefrontSettings, toClientSettings } from "@/lib/settings/resolve";
 
 /**
@@ -40,6 +41,10 @@ export default async function SiteLayout({
         {children}
       </div>
       <SiteFooter delivery={settings.delivery} />
+
+      {/* Storefront only. The admin is the owner's own screens behind a
+          password — measuring their visits would be measuring themselves. */}
+      <CookieConsent />
     </StorefrontSettingsProvider>
   );
 }

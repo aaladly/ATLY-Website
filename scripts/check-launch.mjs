@@ -84,9 +84,10 @@ prefer(
 require_(
   env("NEXT_PUBLIC_SUPABASE_URL") && env("SUPABASE_SERVICE_ROLE_KEY"),
   "No database",
-  "Orders and admin settings are held in memory: lost on restart, and not " +
-    "shared between serverless instances. On Vercel that means an order " +
-    "written by one instance is invisible to the next request.",
+  "Orders and admin settings are held in memory. On a single long-running " +
+    "Node process they at least survive between requests, but a restart or a " +
+    "redeploy loses every order taken since the last one -- and nobody is " +
+    "watching for that.",
 );
 
 prefer(
@@ -144,15 +145,15 @@ require_(
     "allergen page says plainly that we are not claiming it is safe.",
 );
 
-const { TERMS_PLACEHOLDERS } = await import("../src/lib/terms.ts");
+const { LEGAL_PLACEHOLDERS } = await import("../src/lib/legal.ts");
 
 require_(
-  TERMS_PLACEHOLDERS.length === 0,
-  `${TERMS_PLACEHOLDERS.length} detail${TERMS_PLACEHOLDERS.length === 1 ? "" : "s"} missing from the terms`,
-  `Still to settle: ${TERMS_PLACEHOLDERS.join("; ")}. Each one renders on ` +
+  LEGAL_PLACEHOLDERS.length === 0,
+  `${LEGAL_PLACEHOLDERS.length} detail${LEGAL_PLACEHOLDERS.length === 1 ? "" : "s"} missing from the legal pages`,
+  `Still to settle: ${LEGAL_PLACEHOLDERS.join("; ")}. Each one renders on ` +
     "/terms as a visible marker rather than being guessed at — a terms page " +
     "is a contract, and a plausible-sounding guess in one is a promise nobody " +
-    "made. Fill them in in src/lib/terms.ts and on the page.",
+    "made. Fill them in in src/lib/legal.ts and on the page.",
 );
 
 require_(

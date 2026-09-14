@@ -3,7 +3,7 @@ import "server-only";
 import { NJ_TAX } from "./tax";
 import { MAX_LINE_QUANTITY } from "./cart";
 import { getStorefrontSettings, indexVariants } from "./settings/resolve";
-import { TERMS_LAST_UPDATED } from "./terms";
+import { TERMS_LAST_UPDATED } from "./legal";
 import type { CheckoutDeps } from "./checkout";
 
 /**

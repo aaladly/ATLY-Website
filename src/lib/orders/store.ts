@@ -10,8 +10,13 @@ import type { OrderStatus } from "./status";
  * There is no Supabase project connected yet, so orders are held in a module
  * level Map. That means:
  *   - every order is lost when the server restarts
- *   - nothing is shared between serverless instances, so on Vercel an order
- *     written by one instance is invisible to the next request
+ *   - a redeploy loses everything taken since the last one, and nobody is
+ *     watching for that
+ *
+ * Hosting is Hostinger, i.e. one long-running Node process rather than a fleet
+ * of serverless instances, so the data at least survives BETWEEN requests. That
+ * makes the failure quieter, not smaller: it works perfectly right up until a
+ * restart, which is the worst way for a data store to be wrong.
  *
  * It exists so the checkout flow can be built and exercised end to end. It is
  * NOT a launch configuration. Replace it with the Supabase implementation
