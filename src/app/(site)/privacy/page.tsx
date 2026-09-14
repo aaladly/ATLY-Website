@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, Section, Undecided } from "@/components/LegalPage";
+import { BUSINESS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy",
@@ -94,13 +95,14 @@ export default function PrivacyPage() {
 
       <Section heading="Asking us to delete it">
         <p>
-          Ask us and we will tell you what we hold about you, or delete it. We
-          have to keep what the tax rules require us to keep, and nothing else.
+          Email{" "}
+          <a href={`mailto:${BUSINESS.contactEmail}`} className="text-gold-deep">
+            {BUSINESS.contactEmail}
+          </a>{" "}
+          and we will tell you what we hold about you, or delete it. We have to
+          keep what the tax rules require us to keep, and nothing else.
         </p>
-        <Undecided>
-          the email address to send that request to, and how quickly we promise
-          to answer.
-        </Undecided>
+        <Undecided>how quickly we promise to answer that request.</Undecided>
       </Section>
 
       <Section heading="Children">
