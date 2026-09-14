@@ -67,6 +67,7 @@ const DEPS: CheckoutDeps = {
   taxConfig: NJ_TAX,
   makeReference: () => "ATLY-TEST01",
   maxLineQuantity: 99,
+  termsVersion: "2026-09-14",
 };
 
 const request = (overrides: Partial<CheckoutRequest> = {}): CheckoutRequest => ({
@@ -74,6 +75,7 @@ const request = (overrides: Partial<CheckoutRequest> = {}): CheckoutRequest => (
   address: { line1: "12 Main St", line2: "", city: "Hoboken", state: "NJ", zip: "07030" },
   items: [{ variantId: "bars/plain", quantity: 2 }],
   giftNote: "",
+  acceptedTerms: true,
   ...overrides,
 });
 
@@ -385,5 +387,57 @@ describe("order references", () => {
     assert.equal(normalizeReference("nonsense"), null);
     // Contains an excluded character, so it is not one of ours.
     assert.equal(normalizeReference("ATLY-0OIL15"), null);
+  });
+});
+
+describe("terms and allergen acceptance", () => {
+  test("an order without the box ticked is refused", () => {
+    const result = validateCheckout(request({ acceptedTerms: false }), DEPS);
+    assert.equal(result.ok, false);
+    assert.ok(issueFields(result).includes("acceptedTerms"));
+  });
+
+  test("only a real true counts", () => {
+    // The request arrives as JSON from a browser. A missing field, a string,
+    // a number — none of them is somebody ticking a box, and a truthy check
+    // would have accepted two of the three.
+    for (const value of [undefined, null, "", "false", "true", 0, 1, {}]) {
+      const result = validateCheckout(
+        request({ acceptedTerms: value as unknown as boolean }),
+        DEPS,
+      );
+      assert.equal(
+        result.ok,
+        false,
+        `expected refusal for acceptedTerms=${JSON.stringify(value)}`,
+      );
+      assert.ok(issueFields(result).includes("acceptedTerms"));
+    }
+  });
+
+  test("the accepted version is snapshotted onto the order", () => {
+    // The terms will be edited. An order has to record the ones in force when
+    // it was placed, not whatever the page says today.
+    const result = validateCheckout(request(), {
+      ...DEPS,
+      termsVersion: "1999-01-01",
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.order.acceptedTermsVersion, "1999-01-01");
+  });
+
+  test("an unticked box is reported alongside the other problems, not instead of them", () => {
+    // Fixing one thing at a time and pressing the button again is how a
+    // checkout loses somebody.
+    const result = validateCheckout(
+      request({ acceptedTerms: false, contact: { name: "", email: "", phone: "" } }),
+      DEPS,
+    );
+    assert.equal(result.ok, false);
+    const fields = issueFields(result);
+    assert.ok(fields.includes("acceptedTerms"));
+    assert.ok(fields.includes("contact.name"));
+    assert.ok(fields.includes("contact.email"));
   });
 });

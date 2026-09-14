@@ -34,6 +34,10 @@ export function CheckoutForm() {
   const { cart, hydrated, itemCount } = useCart();
   const router = useRouter();
   const [form, setForm] = useState(EMPTY_FORM);
+  // Kept out of `form` because it is not a text field and, unlike the rest of
+  // the form, it is a record of something the customer did rather than
+  // something they typed.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   /**
    * The last answer from the server, and which request it was an answer to.
@@ -73,8 +77,9 @@ export function CheckoutForm() {
       },
       items: cart.lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
       giftNote: form.giftNote,
+      acceptedTerms,
     }),
-    [form, cart.lines],
+    [form, cart.lines, acceptedTerms],
   );
 
   /**
@@ -117,6 +122,11 @@ export function CheckoutForm() {
       address: { line1: "quote", line2: "", city: "quote", state, zip },
       items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
       giftNote: "",
+      // A quote is not an order, so agreeing to the terms is not part of it.
+      // Passing true here keeps an unticked box from hiding the totals the
+      // customer needs in order to decide; the box is enforced where it
+      // matters, on the way to a charge.
+      acceptedTerms: true,
     }).then((result) => {
       if (cancelled) return;
       setQuoted(
@@ -144,12 +154,16 @@ export function CheckoutForm() {
         router.push(`/order/${result.reference}`);
       } else {
         setIssues(result.issues);
-        // Move the customer to the first thing that needs fixing.
+        // Move the customer to the first thing that needs fixing. Handles both
+        // dotted paths ("contact.email") and flat ones ("acceptedTerms") —
+        // before, a flat field was silently skipped and the page just sat
+        // there looking like nothing had happened.
         const first = result.issues[0];
-        if (first && first.field.includes(".")) {
-          document
-            .getElementById(`checkout-${first.field.split(".")[1]}`)
-            ?.focus();
+        if (first) {
+          const field = first.field.includes(".")
+            ? first.field.split(".")[1]
+            : first.field;
+          document.getElementById(`checkout-${field}`)?.focus();
         }
       }
     });
@@ -303,10 +317,61 @@ export function CheckoutForm() {
         )}
       </section>
 
+      {/* ---- Terms and allergens ----
+          Last thing before the button, because it is the thing being agreed
+          to. The button is NOT disabled while the box is unticked: a dead
+          button with no explanation is a worse experience than a button that
+          says exactly what is missing when you press it. */}
+      <section className="mt-12 border-t border-rule-strong pt-6">
+        <label
+          htmlFor="checkout-acceptedTerms"
+          className="flex min-h-11 items-start gap-3 text-body-m"
+        >
+          <input
+            id="checkout-acceptedTerms"
+            name="acceptedTerms"
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            aria-invalid={errorFor("acceptedTerms") ? true : undefined}
+            aria-describedby={
+              errorFor("acceptedTerms") ? "checkout-acceptedTerms-error" : undefined
+            }
+            className="mt-1 h-5 w-5 shrink-0 accent-cocoa-deep"
+          />
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" className="text-gold-deep">
+              Terms &amp; Conditions
+            </Link>{" "}
+            and have reviewed the{" "}
+            <Link href="/allergens" className="text-gold-deep">
+              allergen information
+            </Link>
+            .
+          </span>
+        </label>
+
+        <p className="mt-3 text-body-s text-cocoa">
+          Our chocolate contains milk, peanuts and tree nuts, and is made in a
+          shared kitchen.
+        </p>
+
+        {errorFor("acceptedTerms") && (
+          <p
+            id="checkout-acceptedTerms-error"
+            role="alert"
+            className="mt-3 text-body-s text-error"
+          >
+            {errorFor("acceptedTerms")}
+          </p>
+        )}
+      </section>
+
       <button
         type="submit"
         disabled={pending}
-        className="mt-10 inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream transition-colors duration-200 hover:bg-cocoa disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-8 inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream transition-colors duration-200 hover:bg-cocoa disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? "Placing your order…" : "Place order"}
       </button>

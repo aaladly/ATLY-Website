@@ -45,6 +45,15 @@ export type Variant = {
    * --------------------------------------------------------------------------
    */
   ingredients: readonly string[] | null;
+  /**
+   * Which tree nuts, named individually. Only meaningful when
+   * containsAllergens includes "tree_nuts".
+   *
+   * "Tree nuts" as a category is not enough for someone who reacts to one nut
+   * and not another. null means the varieties are NOT CONFIRMED, and the site
+   * says so rather than listing a plausible set.
+   */
+  treeNutVarieties: readonly string[] | null;
   isAvailable: boolean;
 };
 
@@ -79,6 +88,7 @@ export const PRODUCTS: Product[] = [
         packagedWeightOz: null,
         containsAllergens: ["milk"],
         ingredients: null,
+        treeNutVarieties: null,
         isAvailable: true,
       },
       {
@@ -88,6 +98,7 @@ export const PRODUCTS: Product[] = [
         packagedWeightOz: null,
         containsAllergens: ["milk", "peanuts"],
         ingredients: null,
+        treeNutVarieties: null,
         isAvailable: true,
       },
     ],
@@ -109,6 +120,7 @@ export const PRODUCTS: Product[] = [
         packagedWeightOz: null,
         containsAllergens: ["milk"],
         ingredients: null,
+        treeNutVarieties: null,
         isAvailable: true,
       },
       {
@@ -118,6 +130,9 @@ export const PRODUCTS: Product[] = [
         packagedWeightOz: null,
         containsAllergens: ["milk", "tree_nuts"],
         ingredients: null,
+        // The product is named for the nut. This is the owner's own naming,
+        // not a guess about what is inside.
+        treeNutVarieties: ["Hazelnut"],
         isAvailable: true,
       },
       {
@@ -127,6 +142,8 @@ export const PRODUCTS: Product[] = [
         packagedWeightOz: null,
         containsAllergens: ["milk", "tree_nuts"],
         ingredients: null,
+        // TODO: owner to name the nuts. "Mixed" is not an allergen statement.
+        treeNutVarieties: null,
         isAvailable: true,
       },
     ],
@@ -200,7 +217,34 @@ export const BRAND = {
  * and Z" — but the specifics are theirs.
  * ---------------------------------------------------------------------------
  */
-export const CROSS_CONTACT_STATEMENT: string | null = null;
+export const CROSS_CONTACT_STATEMENT: string | null =
+  "Everything we make is made in a shared kitchen, using shared equipment. Any product may contain traces of milk, peanuts or tree nuts even when they are not listed as an ingredient.";
+
+/**
+ * The tree nuts present in the kitchen, named individually.
+ *
+ * "Tree nuts" as a category is not enough for someone who reacts to one nut
+ * and not another, so each is named.
+ *
+ * WHERE THESE COME FROM, because the two sources did not agree:
+ *   - hazelnut — there is a Hazelnut bar in the catalog above. That is direct
+ *     evidence, not an inference.
+ *   - pistachio — supplied by the owner.
+ * The owner's list named only pistachio. Dropping hazelnut to match it would
+ * have removed a warning about a nut that is a product name on this site,
+ * which is the one direction where being wrong is dangerous. So this is the
+ * union of both, and the Mixed Nuts bar is still unresolved — see
+ * TREE_NUTS_UNCONFIRMED.
+ */
+export const TREE_NUTS_PRESENT: readonly string[] = ["Hazelnut", "Pistachio"];
+
+/**
+ * Still to be named by the owner.
+ *
+ * The Mixed Nuts bar is tagged tree_nuts but nobody has said which nuts. The
+ * site shows this as an open question rather than listing a plausible set.
+ */
+export const TREE_NUTS_UNCONFIRMED = true;
 
 /** True once every sellable flavor has an ingredient list. */
 export const ingredientsComplete = (products: readonly Product[] = PRODUCTS): boolean =>

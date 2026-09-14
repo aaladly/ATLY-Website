@@ -116,9 +116,9 @@ Made with Belcolade Lait Selection 34% Milk Couverture — genuine Belgian couve
 cocoa per Belcolade's specification. Fillings are handmade from all-natural ingredients.
 No preservatives, no additives. Everything is made by hand in small batches.
 
-> **Allergens:** peanut butter, hazelnut, and mixed nuts are major allergens. The
-> ingredient lists and the shared-kitchen cross-contact statement are still outstanding
-> and block launch — see [Allergens](#allergens) below.
+> **Allergens:** milk, peanuts and tree nuts. The shared-kitchen statement is supplied;
+> the per-flavor ingredient lists are still outstanding and block launch — see
+> [Allergens](#allergens) below.
 
 ## Delivery
 
@@ -178,10 +178,24 @@ the same effective settings. Two guards refuse a save rather than letting it thr
 
 Made in one family kitchen that handles peanuts, hazelnuts and mixed nuts.
 
-The allergen **tags** on the site come from facts the owner has stated: the couverture
-is a milk chocolate, and the nut products are named for their nuts. The **ingredient
-lists** and the **shared-kitchen cross-contact statement** do not exist yet, and are
-`null` in `src/lib/catalog.ts`.
+The **shared-kitchen cross-contact statement** is supplied and live. The **ingredient
+lists** do not exist yet and are `null` in `src/lib/catalog.ts`.
+
+Tree nuts are named individually rather than left as a category, because "tree nuts" is
+useless to someone who reacts to one nut and not another. Where they came from, since
+the two sources disagreed:
+
+- **Hazelnut** — there is a Hazelnut bar in the catalog. Direct evidence.
+- **Pistachio** — supplied by the owner.
+- **The Mixed Nuts bar** — still unnamed, and shown as an open question. "Mixed" is not
+  an allergen statement.
+
+The owner's list named only pistachio. Dropping hazelnut to match it would have removed
+a warning about a nut that is a product name on this site, so the site states the union
+of both.
+
+Three more are unconfirmed and render as visible markers: **soy** (soy lecithin is
+common in couverture), **eggs** and **wheat**.
 
 Nothing fills that gap with a plausible guess. `/allergens` and every product page say,
 in plain words, that we are not claiming the chocolate is safe for someone with a nut
@@ -315,13 +329,18 @@ Tracked here so they are not silently guessed at.
 - **Kitchen licensing** — cottage food permit or licensed commercial kitchen? This
   affects required labelling and, potentially, whether online sales and delivery are
   permitted at all. Confirm with the NJ Department of Health early, not at Step 10.
-- **Ingredient lists and cross-contact statement** — must come from the owner. Allergen
-  tags are currently seeded only from stated facts: the couverture is a milk chocolate,
-  and the nut products are named for their nuts. **Blocks launch.** (Step 10)
+- **Ingredient lists** — must come from the owner, per flavor. The cross-contact
+  statement is now supplied. **Blocks launch.** (Step 10)
+- **Which nuts are in the Mixed Nuts bar**, and whether the chocolate or fillings
+  contain **soy, eggs or wheat**. All four render on `/terms` and `/allergens` as
+  visible markers. **Blocks launch.**
+- **Order cutoff and delivery windows** — "9am–5pm, every day except Sunday" is recorded
+  as when orders are taken and made. The cutoff (after which an order is made the next
+  working day) and the time of day a delivery arrives are still open.
+- **Venue county** for disputes, and **ATLY's registered legal form** — LLC, sole
+  proprietorship, or other. The terms have to say who a customer is contracting with.
 - **The real domain** — `NEXT_PUBLIC_SITE_URL`. Everything absolute the site emits is
   built from it, and it is a placeholder today. **Blocks launch.** (Step 10)
-- **A public contact email** — the refunds page currently tells customers to message on
-  Instagram, which is honest but not good enough for an order that went wrong. (Step 10)
 - **A business address, or not** — an Organization record is published in the structured
   data without one. A LocalBusiness record with a real address would get a map listing,
   but the kitchen is a family home and nobody has said whether that address should be

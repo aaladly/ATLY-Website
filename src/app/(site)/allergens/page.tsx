@@ -4,6 +4,7 @@ import { AllergenNotice } from "@/components/AllergenNotice";
 import { SocialLinks } from "@/components/SocialLinks";
 import { BRAND } from "@/lib/catalog";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
+import { BUSINESS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Allergens",
@@ -37,8 +38,13 @@ export default async function AllergensPage() {
         <h2 className="text-display-s">Ask us</h2>
         <p className="mt-3 text-body-m text-cocoa">
           If you have an allergy and anything here is not clear enough to decide
-          on, message us before you order. We would far rather answer the
-          question than have you guess.
+          on, email us before you order. We would far rather answer the question
+          than have you guess.
+        </p>
+        <p className="mt-4 text-body-l">
+          <a href={`mailto:${BUSINESS.contactEmail}`} className="text-gold-deep">
+            {BUSINESS.contactEmail}
+          </a>
         </p>
         <SocialLinks className="mt-6" />
         <p className="mt-8 text-body-s">

@@ -54,8 +54,15 @@ export const LEGAL_REVIEWED = false;
  * gets the map listing that goes with it.
  */
 export const BUSINESS = {
+  /**
+   * The trading name. The owner gave "ATLY" as the legal entity but not its
+   * registered form — LLC, sole proprietorship, or something else. That
+   * matters in the terms, because who exactly a customer is contracting with
+   * is the first thing a contract has to say, so it is tracked as an
+   * outstanding placeholder rather than assumed.
+   */
   legalName: "ATLY Belgian Chocolate",
-  /** TODO: owner to confirm a public contact email before launch. */
-  contactEmail: null as string | null,
+  tradingName: "ATLY",
+  contactEmail: "atlychocolate@gmail.com",
   areaServed: "New Jersey",
 } as const;

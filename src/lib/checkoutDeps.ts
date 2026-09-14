@@ -3,6 +3,7 @@ import "server-only";
 import { NJ_TAX } from "./tax";
 import { MAX_LINE_QUANTITY } from "./cart";
 import { getStorefrontSettings, indexVariants } from "./settings/resolve";
+import { TERMS_LAST_UPDATED } from "./terms";
 import type { CheckoutDeps } from "./checkout";
 
 /**
@@ -41,5 +42,6 @@ export async function checkoutDeps(
     taxConfig: NJ_TAX,
     makeReference,
     maxLineQuantity: MAX_LINE_QUANTITY,
+    termsVersion: TERMS_LAST_UPDATED,
   };
 }

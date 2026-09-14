@@ -42,6 +42,16 @@ export type CheckoutRequest = {
   address: CheckoutAddress;
   items: { variantId: string; quantity: number }[];
   giftNote: string;
+  /**
+   * Whether the customer ticked the terms and allergen box.
+   *
+   * Checked here, on the server, and not only in the form. A `required`
+   * attribute on a checkbox is a convenience for the person filling it in, not
+   * a control — the request can be made without ever loading the page. If this
+   * is the record that the customer was shown the allergen notice, it has to
+   * be a record of something that actually happened.
+   */
+  acceptedTerms: boolean;
 };
 
 export type VariantRecord = {
@@ -66,6 +76,12 @@ export type CheckoutDeps = {
   /** Injected so tests get a deterministic reference. */
   makeReference: () => string;
   maxLineQuantity: number;
+  /**
+   * Which version of the terms the customer is agreeing to, snapshotted onto
+   * the order. The terms will be edited; an order has to record the ones that
+   * were in force when it was placed, not whatever they say today.
+   */
+  termsVersion: string;
 };
 
 export type ValidationIssue = {
@@ -96,6 +112,8 @@ export type ValidatedOrder = {
   totalCents: number;
   inFreeCounty: boolean;
   giftNote: string;
+  /** The terms the customer agreed to, as they stood when they ordered. */
+  acceptedTermsVersion: string;
 };
 
 export type CheckoutResult =
@@ -177,6 +195,17 @@ export function validateCheckout(
   }
 
   const giftNote = clean(request.giftNote).slice(0, MAX_LENGTHS.giftNote);
+
+  // ---- Terms and allergens ------------------------------------------------
+  // Strictly true, not truthy: "false", 0 and "" all arriving as something
+  // truthy is exactly how a box nobody ticked becomes a box everybody ticked.
+  if (request.acceptedTerms !== true) {
+    issues.push({
+      field: "acceptedTerms",
+      message:
+        "Please confirm you have read the terms and the allergen information before ordering.",
+    });
+  }
 
   // ---- Items -------------------------------------------------------------
   // Rebuilt from the catalog. The browser supplies ids and quantities only.
@@ -316,6 +345,7 @@ export function validateCheckout(
       totalCents: price.subtotalCents + delivery.costCents + tax.taxCents,
       inFreeCounty: delivery.inFreeCounty,
       giftNote,
+      acceptedTermsVersion: deps.termsVersion,
     },
   };
 }

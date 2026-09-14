@@ -373,6 +373,7 @@ export async function seedSampleOrderAction(): Promise<ActionState> {
         quantity: index === 0 ? 3 : 2,
       })),
       giftNote: "This order was created by the Add a sample order button.",
+      acceptedTerms: true,
     },
     await checkoutDeps(() => makeOrderReference()),
   );

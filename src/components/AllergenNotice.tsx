@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Placeholder } from "./Placeholder";
 import {
   ALLERGEN_LABEL,
   CROSS_CONTACT_STATEMENT,
@@ -67,6 +68,22 @@ export function AllergenNotice({
                     .map((a) => ALLERGEN_LABEL[a])
                     .join(", ")}
                 </p>
+
+                {/* "Tree nuts" is not enough for somebody who reacts to one
+                    nut and not another, so the varieties are named — or the
+                    gap is shown, rather than a likely-looking list. */}
+                {variant.containsAllergens.includes("tree_nuts") && (
+                  <p className="mt-1 text-body-s">
+                    <span className="text-cocoa">The tree nuts are: </span>
+                    {variant.treeNutVarieties ? (
+                      variant.treeNutVarieties.join(", ")
+                    ) : (
+                      <Placeholder>
+                        which nuts — still to be named
+                      </Placeholder>
+                    )}
+                  </p>
+                )}
 
                 {variant.ingredients ? (
                   <p className="mt-2 text-body-s text-cocoa">

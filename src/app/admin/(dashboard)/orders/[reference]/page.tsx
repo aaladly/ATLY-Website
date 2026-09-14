@@ -177,6 +177,29 @@ export default async function AdminOrderPage({
           </div>
         </dl>
       </section>
+
+      {/* ---- What they agreed to ----
+          The whole point of collecting the tick. If a question ever comes up
+          about whether a customer was shown the allergen notice, the answer
+          has to be on the order, tied to the wording that was live at the
+          time — not to whatever the terms page says now. */}
+      <section className="mt-12 border-t border-rule pt-6">
+        <h2 className="label-caps">Terms</h2>
+        {order.acceptedTermsVersion ? (
+          <p className="mt-3 text-body-m">
+            Agreed to the terms and confirmed reading the allergen information.
+            Version of{" "}
+            <time dateTime={order.acceptedTermsVersion}>
+              {order.acceptedTermsVersion}
+            </time>
+            .
+          </p>
+        ) : (
+          <p className="mt-3 text-body-m text-error">
+            No record of acceptance. This order predates the terms checkbox.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

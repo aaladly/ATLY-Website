@@ -144,6 +144,17 @@ require_(
     "allergen page says plainly that we are not claiming it is safe.",
 );
 
+const { TERMS_PLACEHOLDERS } = await import("../src/lib/terms.ts");
+
+require_(
+  TERMS_PLACEHOLDERS.length === 0,
+  `${TERMS_PLACEHOLDERS.length} detail${TERMS_PLACEHOLDERS.length === 1 ? "" : "s"} missing from the terms`,
+  `Still to settle: ${TERMS_PLACEHOLDERS.join("; ")}. Each one renders on ` +
+    "/terms as a visible marker rather than being guessed at — a terms page " +
+    "is a contract, and a plausible-sounding guess in one is a promise nobody " +
+    "made. Fill them in in src/lib/terms.ts and on the page.",
+);
+
 require_(
   LEGAL_REVIEWED,
   "The privacy, terms and refund pages are unreviewed drafts",
