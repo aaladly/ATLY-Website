@@ -62,8 +62,8 @@ export default function RefundsPage() {
       <Section heading="Cancelling">
         <p>
           You can cancel any time before your order goes out for delivery, and
-          we will refund you in full. Once it has left us it cannot be
-          cancelled.
+          we will refund you in full — even if we have already made it. Once it
+          has left us it cannot be cancelled.
         </p>
       </Section>
 

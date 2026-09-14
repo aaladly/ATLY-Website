@@ -271,13 +271,11 @@ export default async function TermsPage() {
             </li>
           </ul>
           <p>
-            We take and make orders from 9am to 5pm, every day except Sunday.
+            You can order at any time, day or night. There is no cutoff time
+            and no day we stop taking orders — if the shop is open, you can
+            place one.
           </p>
           <p>
-            <Placeholder>
-              order cutoff — the time after which an order is made the next
-              working day
-            </Placeholder>{" "}
             <Placeholder>
               delivery windows — what time of day a delivery arrives
             </Placeholder>
@@ -348,11 +346,26 @@ export default async function TermsPage() {
             it.
           </p>
 
+          {/*
+            The owner's own rule, stated plainly: the line is dispatch, not the
+            start of production.
+
+            Worth them knowing what it costs. With no order cutoff, an order
+            can arrive at any hour, and this promises a full refund even on one
+            already made — handmade perishable stock that cannot be resold. It
+            is a generous rule, deliberately chosen, and it is written here as
+            generously as it actually is rather than hedged into something a
+            customer would have to read twice.
+          */}
           <h3 className="text-display-s">Changing your mind</h3>
           <p>
-            You can cancel an order any time before it goes out for delivery —
-            email us and we will refund you in full. Once it has left us it
-            cannot be cancelled.
+            You can cancel any time before your order goes out for delivery.
+            Email us and we will refund you in full — even if we have already
+            made it.
+          </p>
+          <p>
+            Once it has left us it cannot be cancelled. At that point it is on
+            its way to you and we cannot get it back.
           </p>
 
           <h3 className="text-display-s">What we will not refund</h3>

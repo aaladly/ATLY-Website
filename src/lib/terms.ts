@@ -60,7 +60,6 @@ export const TERMS_PLACEHOLDERS: readonly string[] = [
   "Eggs and wheat — whether any filling or inclusion uses them",
   "Which tree nuts are in the Mixed Nuts bar",
   "Delivery windows — what time of day a delivery arrives",
-  "Order cutoff — the time after which an order is made the next day",
   "Venue county for disputes",
   "Registered legal form — whether ATLY is an LLC, a sole proprietorship, or something else",
 ];
