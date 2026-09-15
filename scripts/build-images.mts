@@ -181,9 +181,18 @@ async function buildPhoto(key: string): Promise<boolean> {
 
 type KeyResult = {
   buffer: Buffer;
-  translucency: number;
+  /** Percentage of rim pixels that came back still the colour of the ground. */
+  halo: number;
   fidelity: number;
-  /** Mean relative luminance of the ink, 0 black to 1 white. */
+  /**
+   * Mean relative luminance of the SOLID ink, 0 black to 1 white.
+   *
+   * Solid only, and that qualifier is the whole value of the number. Averaged
+   * across every inked pixel this mark reads 0.90 — bright — because it is
+   * fine engraving, so most of its pixels are faint rim whose recovered
+   * colour clamps light. Its actual strokes are 0.21. The soft edge drowns
+   * the signal, exactly as it did in the halo check.
+   */
   inkLuma: number;
 };
 
@@ -208,11 +217,19 @@ type KeyResult = {
  *
  * Two numbers come back with it, because "did this work" is not something to
  * eyeball on one background:
- *   fidelity     — composite the result back onto the original ground and
- *                  compare. 1.0 means nothing was lost.
- *   translucency — how much of the ink ended up semi-transparent. High means
- *                  the mark will look washed out on a dark surface, which is
- *                  the whole reason for cutting it out in the first place.
+ *   fidelity — composite the result back onto the original ground and compare.
+ *              1.0 means nothing was lost.
+ *   halo     — of the pixels that ended up partly transparent, how many came
+ *              back still the colour of the GROUND. That is what a halo is: a
+ *              rim of cream riding along the edge of the mark, invisible at
+ *              home and obvious anywhere else.
+ *
+ * An earlier version measured translucency instead — how much of the ink was
+ * semi-transparent at all — and it was the wrong question. This mark is fine
+ * engraved hairlines, so most of its drawn area IS partial coverage, honestly
+ * and correctly, and the check refused a cutout that turned out to be perfect.
+ * How much of the ink is soft says nothing about whether the key worked. What
+ * colour the soft part came back says everything.
  */
 async function keyOutBackground(input: Buffer): Promise<KeyResult> {
   const { data, info } = await sharp(input)
@@ -250,8 +267,9 @@ async function keyOutBackground(input: Buffer): Promise<KeyResult> {
   const threshold = Math.max(1, maxDistance * 0.2);
 
   const out = Buffer.alloc(width * height * 4);
-  let translucent = 0;
-  let inked = 0;
+  let rim = 0;
+  let haloed = 0;
+  let solidInk = 0;
   let inkLumaSum = 0;
   let squaredError = 0;
 
@@ -273,10 +291,22 @@ async function keyOutBackground(input: Buffer): Promise<KeyResult> {
       out[q + 1] = Math.min(255, Math.max(0, Math.round((g - (1 - a) * bg[1]) / a)));
       out[q + 2] = Math.min(255, Math.max(0, Math.round((b - (1 - a) * bg[2]) / a)));
       out[q + 3] = Math.round(a * 255);
-      inked += 1;
-      if (a < 0.9) translucent += 1;
-      inkLumaSum +=
-        (0.2126 * out[q] + 0.7152 * out[q + 1] + 0.0722 * out[q + 2]) / 255;
+      if (a > 0.95) {
+        solidInk += 1;
+        inkLumaSum +=
+          (0.2126 * out[q] + 0.7152 * out[q + 1] + 0.0722 * out[q + 2]) / 255;
+      }
+
+      // Only the soft edge can carry a halo; solid ink cannot.
+      if (a > 0.05 && a < 0.95) {
+        rim += 1;
+        const recoveredFromGround = Math.sqrt(
+          (out[q] - bg[0]) ** 2 +
+            (out[q + 1] - bg[1]) ** 2 +
+            (out[q + 2] - bg[2]) ** 2,
+        );
+        if (recoveredFromGround < maxDistance * 0.15) haloed += 1;
+      }
     }
 
     // Composite back onto the ground and measure what changed.
@@ -291,19 +321,40 @@ async function keyOutBackground(input: Buffer): Promise<KeyResult> {
     buffer: await sharp(out, { raw: { width, height, channels: 4 } })
       .png({ compressionLevel: 9 })
       .toBuffer(),
-    translucency: inked === 0 ? 1 : translucent / inked,
+    halo: rim === 0 ? 0 : haloed / rim,
     fidelity: 1 - Math.sqrt(squaredError / (pixels * 3)),
-    inkLuma: inked === 0 ? 1 : inkLumaSum / inked,
+    inkLuma: solidInk === 0 ? 1 : inkLumaSum / solidInk,
   };
 }
 
 /**
  * A cutout is only worth shipping if it survives being put back where it came
- * from AND the ink stays solid. Either test failing means the cream tile is
- * the better of the two — per the brief, note it rather than ship a halo.
+ * from AND its soft edge carries ink rather than cream. Either test failing
+ * means the cream tile is the better of the two — per the brief, note it
+ * rather than ship a halo.
+ *
+ * The ceiling is set where it separates real cases: the supplied artwork keys
+ * at 15%, the same artwork saved as a JPEG at 51%.
  */
+/**
+ * PNG settings for the opaque logo derivatives.
+ *
+ * Palette-quantised, because this mark is a handful of browns on one cream
+ * ground and storing it as truecolour spends most of its bytes describing
+ * shades nobody can see. Measured on the 512px icon: 304 KB plain, 66 KB
+ * this way, at 41 dB PSNR — visually lossless, and checked by eye at 2x on
+ * the engraved cacao pod, which is the part that would band first if this
+ * were too aggressive.
+ *
+ * The transparent cutout deliberately does NOT use this. Its soft alpha rim
+ * is the entire point of it, and quantising the alpha channel is the one
+ * place this trade stops being free.
+ */
+const LOGO_PNG = { compressionLevel: 9, palette: true, quality: 80 } as const;
+const LOGO_PNG_LOSSLESS = { compressionLevel: 9 } as const;
+
 const FIDELITY_FLOOR = 0.99;
-const TRANSLUCENCY_CEILING = 0.35;
+const HALO_CEILING = 0.3;
 
 async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
   const file = await findSource(LOGO.sourceBase);
@@ -330,23 +381,23 @@ async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
   const size = LOGO.headerHeight * 2;
   await sharp(input)
     .resize(size, size, { fit: "contain" })
-    .png({ compressionLevel: 9 })
+    .png(LOGO_PNG)
     .toFile(path.join(IMAGES_OUT, LOGO.base + ".png"));
 
   // --- Header lockup, ground keyed out ---
   const keyed = await keyOutBackground(input);
   const clean =
-    keyed.fidelity >= FIDELITY_FLOOR && keyed.translucency <= TRANSLUCENCY_CEILING;
+    keyed.fidelity >= FIDELITY_FLOOR && keyed.halo <= HALO_CEILING;
 
   console.log(
     "    key: fidelity " +
       keyed.fidelity.toFixed(4) +
       " (floor " +
       FIDELITY_FLOOR +
-      "), translucency " +
-      (keyed.translucency * 100).toFixed(1) +
+      "), halo " +
+      (keyed.halo * 100).toFixed(1) +
       "% (ceiling " +
-      TRANSLUCENCY_CEILING * 100 +
+      HALO_CEILING * 100 +
       "%)",
   );
 
@@ -356,7 +407,7 @@ async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
         fit: "contain",
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       })
-      .png({ compressionLevel: 9 })
+      .png(LOGO_PNG_LOSSLESS)
       .toFile(path.join(IMAGES_OUT, LOGO.cutoutBase + ".png"));
     console.log("    -> " + LOGO.cutoutBase + ".png (transparent)");
     // A clean key is not the same as a usable logo everywhere. This mark is
@@ -407,7 +458,7 @@ async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
   for (const [name, px] of icons) {
     await sharp(input)
       .resize(px, px, { fit: "contain" })
-      .png({ compressionLevel: 9 })
+      .png(LOGO_PNG)
       .toFile(path.join(IMAGES_OUT, name));
   }
   console.log("    -> icon-32.png, apple-touch-icon.png, icon-512.png");
@@ -424,9 +475,10 @@ async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
     },
   })
     .composite([{ input: ogLogo, gravity: "centre" }])
-    .png({ compressionLevel: 9 })
+    .png(LOGO_PNG)
     .toFile(path.join(IMAGES_OUT, "og-logo.png"));
-  console.log("    -> og-logo.png (1200x630)");
+  const ogSize = (await stat(path.join(IMAGES_OUT, "og-logo.png"))).size;
+  console.log("    -> og-logo.png (1200x630, " + kb(ogSize) + ")");
 
   return { present: true, cutout: clean };
 }

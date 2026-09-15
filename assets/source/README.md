@@ -30,30 +30,25 @@ squashed, and the script says so when it does it.
 ## The logo is the one that wants a PNG
 
 Not a rule, but measured. The script cuts the cream ground out from behind the
-mark by how far each pixel sits from the background colour. JPEG puts ringing
-around every hard edge, and around dark ink on a flat ground that ringing is
-pixels part-way back toward cream — which the key reads as "partly
-transparent".
+mark by how far each pixel sits from the background colour, then checks the
+result for a halo — the fraction of soft-edge pixels that came back still the
+colour of the ground. Under 30% ships; over it, the cream tile is used instead.
 
-The same artwork, both ways:
-
-| Original | Translucent ink | Cutout shipped? |
+| Logo original | Halo | Cutout shipped? |
 | --- | --- | --- |
-| PNG  | 2.2%  | yes |
-| JPEG | 37.8% | no — falls back to the cream tile |
+| PNG (the supplied file) | 25.3% | yes |
+| The same artwork as JPEG | 50.8% | no |
 
-The product photographs do not care. Only the logo does.
+JPEG puts ringing around every hard edge, and around dark ink on flat cream
+that ringing is pixels part-way back toward the background — which is exactly
+what a halo is made of.
 
-## Then
+The four product photographs do not care at all. Only the logo does.
 
-```
-npm run build:images
-```
+## One thing the cutout cannot fix
 
-It prints the weight of every derivative, fails if one goes over the 150 KB
-budget at 800px, and rewrites `src/lib/images.generated.ts` with what it made.
-
-## One thing it does silently, on purpose
-
-It strips EXIF. Phone photographs of a product on a kitchen counter carry the
-GPS coordinates of the kitchen, and this is a family home.
+The mark is dark ink: its solid strokes sit at 0.21 luminance. With the cream
+ground removed there is nothing left to hold it apart from a dark surface, so
+on the cocoa-deep sections it all but disappears. The script says so when it
+runs. An inverted version would have to be drawn from the original artwork —
+no amount of processing invents it.
