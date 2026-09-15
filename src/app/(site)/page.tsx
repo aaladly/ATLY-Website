@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { Wordmark } from "@/components/Wordmark";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
-import { BRAND, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
+import { BRAND } from "@/lib/catalog";
+import { ProductAllergenLine } from "@/components/ProductAllergenLine";
 import { productPhoto } from "@/lib/images";
 import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
@@ -168,7 +169,6 @@ export default async function Home() {
             const tiers = tiersByKind[product.kind];
             const best = [...tiers].sort((a, b) => b.size - a.size)[0];
             const bestPrice = priceQuantity(best.size, tiers);
-            const allergens = productAllergens(product);
             const photo = productPhoto(product.slug);
             const soldOut =
               !product.isAvailable || product.variants.every((v) => !v.isAvailable);
@@ -211,10 +211,7 @@ export default async function Home() {
                     .map((v) => v.name)
                     .join(" · ")}
                 </p>
-                <p className="mt-2 text-body-s text-cocoa">
-                  Contains{" "}
-                  {allergens.map((a) => ALLERGEN_LABEL[a].toLowerCase()).join(", ")}.
-                </p>
+                <ProductAllergenLine product={product} className="mt-4" />
                 <div className="mt-6">
                   <Link
                     href={`/shop/${product.slug}`}

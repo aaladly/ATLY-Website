@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
-import { productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
+import { ProductAllergenLine } from "@/components/ProductAllergenLine";
 import { productPhoto } from "@/lib/images";
 import { priceQuantity, formatCents } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
@@ -36,7 +36,6 @@ export default async function Shop() {
             const tiers = [...tiersByKind[product.kind]].sort(
               (a, b) => a.size - b.size,
             );
-            const allergens = productAllergens(product);
             const photo = productPhoto(product.slug);
             const available = product.variants.filter((v) => v.isAvailable);
             const soldOut = !product.isAvailable || available.length === 0;
@@ -99,9 +98,7 @@ export default async function Shop() {
                     : available.map((v) => v.name).join(" · ")}
                 </p>
 
-                <p className="mt-5 text-body-s text-cocoa">
-                  Contains {allergens.map((a) => ALLERGEN_LABEL[a].toLowerCase()).join(", ")}.
-                </p>
+                <ProductAllergenLine product={product} className="mt-5" />
 
                 <div className="mt-7">
                   <Link
