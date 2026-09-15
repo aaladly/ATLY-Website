@@ -239,12 +239,30 @@ export const CROSS_CONTACT_STATEMENT: string | null =
 export const TREE_NUTS_PRESENT: readonly string[] = ["Hazelnut", "Pistachio"];
 
 /**
- * Still to be named by the owner.
+ * Flavors tagged tree_nuts where nobody has said WHICH tree nuts.
  *
- * The Mixed Nuts bar is tagged tree_nuts but nobody has said which nuts. The
- * site shows this as an open question rather than listing a plausible set.
+ * The Mixed Nuts bar is the case: "mixed" is a marketing word, not an
+ * allergen statement, and somebody who reacts to cashew and not to almond
+ * cannot act on it.
+ *
+ * This used to be a visible marker on the allergen page. It is now on the
+ * launch checklist instead — off the customer page, but not forgotten, which
+ * is the only version of "removed" worth having for an allergen gap. Derived
+ * rather than a hand-maintained boolean, so it clears itself the moment the
+ * varieties are filled in above.
  */
-export const TREE_NUTS_UNCONFIRMED = true;
+export const variantsMissingTreeNutVarieties = (
+  products: readonly Product[] = PRODUCTS,
+): string[] =>
+  products.flatMap((product) =>
+    product.variants
+      .filter(
+        (variant) =>
+          variant.containsAllergens.includes("tree_nuts") &&
+          variant.treeNutVarieties === null,
+      )
+      .map((variant) => `${product.name} — ${variant.name}`),
+  );
 
 /** True once every sellable flavor has an ingredient list. */
 export const ingredientsComplete = (products: readonly Product[] = PRODUCTS): boolean =>

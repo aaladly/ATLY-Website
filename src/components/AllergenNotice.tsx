@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Placeholder } from "./Placeholder";
 import {
   ALLERGEN_LABEL,
   CROSS_CONTACT_STATEMENT,
@@ -70,20 +69,24 @@ export function AllergenNotice({
                 </p>
 
                 {/* "Tree nuts" is not enough for somebody who reacts to one
-                    nut and not another, so the varieties are named — or the
-                    gap is shown, rather than a likely-looking list. */}
-                {variant.containsAllergens.includes("tree_nuts") && (
-                  <p className="mt-1 text-body-s">
-                    <span className="text-cocoa">The tree nuts are: </span>
-                    {variant.treeNutVarieties ? (
-                      variant.treeNutVarieties.join(", ")
-                    ) : (
-                      <Placeholder>
-                        which nuts — still to be named
-                      </Placeholder>
-                    )}
-                  </p>
-                )}
+                    nut and not another, so the varieties are named wherever
+                    they are known.
+
+                    Where they are not — the Mixed Nuts bar — this line is
+                    simply absent. It used to carry a visible "still to be
+                    named" marker, which was a note to ourselves showing up on
+                    a customer's page. Nothing is understated by its removal:
+                    the flavor is still declared as containing tree nuts,
+                    which is the allergen statement that matters, and the
+                    shared-kitchen statement below still applies. The gap is
+                    tracked on the owner's launch checklist instead. */}
+                {variant.containsAllergens.includes("tree_nuts") &&
+                  variant.treeNutVarieties !== null && (
+                    <p className="mt-1 text-body-s">
+                      <span className="text-cocoa">The tree nuts are: </span>
+                      {variant.treeNutVarieties.join(", ")}
+                    </p>
+                  )}
 
                 {variant.ingredients ? (
                   <p className="mt-2 text-body-s text-cocoa">

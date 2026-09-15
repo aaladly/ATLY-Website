@@ -29,6 +29,7 @@ const {
   PRODUCTS,
   CROSS_CONTACT_STATEMENT,
   variantsMissingIngredients,
+  variantsMissingTreeNutVarieties,
 } = await import("../src/lib/catalog.ts");
 const { DELIVERY_CONFIG } = await import("../src/config/delivery.ts");
 const { missingPhotos, logoPresent, PHOTOS, sourceLabel } = await import(
@@ -137,6 +138,18 @@ require_(
   `Waiting on: ${missingIngredients.join(", ")}. These come from the owner, ` +
     "from the actual recipes — never from guesswork. Someone with an allergy " +
     "reads them and decides whether to eat.",
+);
+
+const unnamedNuts = variantsMissingTreeNutVarieties(PRODUCTS);
+
+prefer(
+  unnamedNuts.length === 0,
+  `${unnamedNuts.length} flavor${unnamedNuts.length === 1 ? " declares" : "s declare"} tree nuts without naming them`,
+  `Waiting on: ${unnamedNuts.join(", ")}. "Mixed" is a marketing word, not an ` +
+    "allergen statement — somebody who reacts to cashew and not to almond " +
+    "cannot act on it. The site no longer shows this gap to customers, so " +
+    "this line is the only place it is recorded. Name them in " +
+    "src/lib/catalog.ts and it clears itself.",
 );
 
 require_(
