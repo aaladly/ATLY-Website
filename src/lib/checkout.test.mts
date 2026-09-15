@@ -52,6 +52,7 @@ const VARIANTS: Record<string, VariantRecord> = {
 const DELIVERY: DeliveryConfig = {
   allowedState: "NJ",
   allowedStateName: "New Jersey",
+  allowedZipPrefixes: ["07", "08"],
   standardCents: 599,
   freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
   freeCountyName: "Hunterdon County",

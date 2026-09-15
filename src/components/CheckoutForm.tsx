@@ -67,7 +67,6 @@ export function CheckoutForm() {
     ) => setForm((current) => ({ ...current, [name]: e.target.value })),
   });
 
-  const errorFor = (path: string) => issues.find((i) => i.field === path)?.message;
 
   const request = useMemo<CheckoutRequest>(
     () => ({
@@ -148,6 +147,23 @@ export function CheckoutForm() {
   const current = shouldQuote && quoted?.key === quoteKey ? quoted : null;
   const totals = current && "totals" in current ? current.totals : null;
   const quoteIssues = current && "issues" in current ? current.issues : [];
+
+  /**
+   * Field errors from both sources: what the server said when the form was
+   * submitted, and what it says about the address as it is being typed.
+   *
+   * The live ones matter for the ZIP in particular. A refusal only shown down
+   * in the order summary leaves the offending input looking fine, so the
+   * customer reads "please check the ZIP" and has to work out which of the six
+   * boxes above is the ZIP. Marking the field is the whole point of saying it.
+   *
+   * Declared after quoteIssues rather than beside the submit handler because
+   * it now depends on it, and relying on a closure being evaluated late is not
+   * a thing to leave for somebody to discover.
+   */
+  const errorFor = (path: string) =>
+    issues.find((i) => i.field === path)?.message ??
+    quoteIssues.find((i) => i.field === path)?.message;
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();

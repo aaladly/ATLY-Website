@@ -22,6 +22,7 @@ import type { DeliveryConfig } from "../config/delivery.ts";
 const BASE: DeliveryConfig = {
   allowedState: "NJ",
   allowedStateName: "New Jersey",
+  allowedZipPrefixes: ["07", "08"],
   standardCents: 599,
   // Threshold mode. Production runs alwaysFree; both are covered below.
   freeCounty: { alwaysFree: false, thresholdCents: 5000, thresholdInclusive: true },
@@ -480,5 +481,80 @@ describe("the delivery policy summary", () => {
       freeCounty: { alwaysFree: false, thresholdCents: 3500, thresholdInclusive: true },
     });
     assert.match(summary, /\$35 or more in Hunterdon County/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The ZIP has to belong to the state
+// ---------------------------------------------------------------------------
+// The state field is a two-letter box that defaults to NJ on this site. Left
+// at its default beside a ZIP from anywhere else, the engine used to quote the
+// standard rate and accept the order — a charge for a delivery that could not
+// be made, which nothing downstream would have caught.
+
+describe("a ZIP that is not in the allowed state", () => {
+  test("is refused even when the state field says NJ", () => {
+    for (const zip of ["99999", "10001", "90210", "33101", "06001"]) {
+      const result = quote(zip, 2000);
+      assert.equal(result.kind, "unavailable", `${zip} should be refused`);
+      if (result.kind !== "unavailable") return;
+      assert.equal(result.reason, "zip_outside_state");
+    }
+  });
+
+  test("is refused however large the order", () => {
+    // Being over the free-delivery threshold must not buy a way past the
+    // address checks.
+    for (const subtotal of [100, 5000, 100000]) {
+      const result = quote("90210", subtotal, {
+        freeOver: { thresholdCents: 5000, inclusive: true },
+      });
+      assert.equal(result.kind, "unavailable");
+    }
+  });
+
+  test("names the ZIP back to the customer, not just the state", () => {
+    // The state box is right and the ZIP is wrong. A message about the state
+    // would send them to correct the one field that is already correct.
+    const result = quote("90210", 2000);
+    if (result.kind !== "unavailable") return assert.fail("expected refusal");
+    assert.match(result.message, /90210/);
+    assert.match(result.message, /ZIP/);
+  });
+
+  test("reports a reason distinct from out_of_state", () => {
+    // checkout.ts attaches out_of_state to address.state and everything else
+    // to address.zip. Sharing the reason would point the customer at the
+    // wrong input.
+    const wrongState = quote("10001", 2000, {}, "NY");
+    const wrongZip = quote("10001", 2000, {}, "NJ");
+    if (wrongState.kind !== "unavailable" || wrongZip.kind !== "unavailable") {
+      return assert.fail("expected refusals");
+    }
+    assert.equal(wrongState.reason, "out_of_state");
+    assert.equal(wrongZip.reason, "zip_outside_state");
+  });
+
+  test("every real New Jersey prefix is still accepted", () => {
+    // 070-089 is exclusively New Jersey, so both prefixes must pass and the
+    // boundaries of the range must not be clipped.
+    for (const zip of ["07001", "07030", "07999", "08001", "08822", "08989"]) {
+      const result = quote(zip, 2000);
+      assert.equal(result.kind, "quoted", `${zip} should be deliverable`);
+    }
+  });
+
+  test("an empty prefix list disables the check", () => {
+    // So a future second state does not need a code change to be tried out.
+    const result = quote("90210", 2000, { allowedZipPrefixes: [] });
+    assert.equal(result.kind, "quoted");
+  });
+
+  test("the shape check still runs first", () => {
+    // "abc" is not a ZIP at all, which is a more useful thing to be told than
+    // that it is not a New Jersey one.
+    const result = quote("abc", 2000);
+    if (result.kind !== "unavailable") return assert.fail("expected refusal");
+    assert.equal(result.reason, "invalid_zip");
   });
 });

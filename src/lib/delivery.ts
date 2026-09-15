@@ -34,7 +34,20 @@ export type DeliveryQuoteInput = {
 export type DeliveryQuote =
   | {
       kind: "unavailable";
-      reason: "out_of_state" | "excluded_area" | "invalid_zip";
+      reason:
+        | "out_of_state"
+        | "excluded_area"
+        | "invalid_zip"
+        /**
+         * The state says one thing and the ZIP says another.
+         *
+         * Separate from out_of_state because it points at a different field:
+         * the state box is right and the ZIP is wrong, or the customer left
+         * the state at its default. checkout.ts attaches everything that is
+         * not out_of_state to address.zip, which is where the correction has
+         * to be made.
+         */
+        | "zip_outside_state";
       /** Customer-facing, friendly, and specific about what to do next. */
       message: string;
     }
@@ -101,7 +114,10 @@ export function findWeightTier(
  * Quote delivery for an address and order subtotal.
  *
  * Order of checks matters: state before ZIP, because "we do not deliver to
- * your state" is a more useful message than "that ZIP is not in our area".
+ * your state" is a more useful message than "that ZIP is not in our area";
+ * then the ZIP's shape, then whether it belongs to that state at all, before
+ * anything is priced. Nothing downstream re-checks the address, so an order
+ * that gets past here is one we have said we can deliver.
  */
 export function quoteDelivery(
   input: DeliveryQuoteInput,
@@ -123,6 +139,23 @@ export function quoteDelivery(
       kind: "unavailable",
       reason: "invalid_zip",
       message: "That does not look like a ZIP code. Five digits, please.",
+    };
+  }
+
+  /*
+    The state field is a box the customer types into, and on this site it is
+    pre-filled with NJ. Left alone while a ZIP from another state is entered,
+    the old code quoted the standard rate and took the order — a charge for a
+    delivery that cannot be made, which no later step would have caught.
+  */
+  if (
+    config.allowedZipPrefixes.length > 0 &&
+    !config.allowedZipPrefixes.some((prefix) => zip.startsWith(prefix))
+  ) {
+    return {
+      kind: "unavailable",
+      reason: "zip_outside_state",
+      message: `${zip} is not a ${config.allowedStateName} ZIP code. We deliver within ${config.allowedStateName} only — please check the ZIP.`,
     };
   }
 

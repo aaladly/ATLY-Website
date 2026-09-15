@@ -17,6 +17,24 @@ export type DeliveryConfig = {
   allowedState: string;
   allowedStateName: string;
 
+  /**
+   * ZIP prefixes that actually belong to the allowed state.
+   *
+   * The state field alone is not evidence. It is a two-letter box a customer
+   * types into, it defaults to NJ on this site, and nothing stopped somebody
+   * leaving it at NJ while entering a ZIP from anywhere in the country — the
+   * order was quoted at the standard rate and accepted, for a delivery that
+   * cannot happen.
+   *
+   * New Jersey is 07 and 08, in full: the 070-089 range is exclusively New
+   * Jersey, so a two-digit prefix check covers every real NJ address without
+   * needing a ZIP database. MUST be changed together with allowedState if the
+   * business ever delivers to a second state.
+   *
+   * Empty disables the check entirely.
+   */
+  allowedZipPrefixes: readonly string[];
+
   /** The flat rate for a qualifying order outside the free-delivery county. */
   standardCents: number;
 
@@ -117,6 +135,7 @@ export type DeliveryConfig = {
 export const DELIVERY_CONFIG: DeliveryConfig = {
   allowedState: "NJ",
   allowedStateName: "New Jersey",
+  allowedZipPrefixes: ["07", "08"],
   standardCents: 599,
   freeCounty: {
     // Owner-confirmed, Step 6: every Hunterdon order is delivered free,
