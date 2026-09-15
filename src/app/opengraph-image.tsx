@@ -1,22 +1,27 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { logoPresent } from "@/lib/images";
 
 /**
  * The link-preview card.
  *
- * Type only, on the brand's own colours. Deliberately not a photograph: there
- * are no product photographs in this project yet, and a link preview is the
- * one image a customer sees before they have seen anything else. A stock
- * chocolate photo would be a lie about what they are getting.
+ * Two versions of the same card, and which one is served depends on whether
+ * the logo artwork has been through `npm run build:images` yet.
  *
- * TODO: replace with a real product photograph once logoandprodpics.zip is in
- * public/images/. Dropping an opengraph-image.jpg next to this file is enough
- * — a literal image file wins over a generated one.
+ * WITH the logo: the mark centred on the brand cream, which is what
+ * og-logo.png already is at exactly 1200x630 — so it is served as-is rather
+ * than rebuilt here.
+ *
+ * WITHOUT it: type only, on the brand's own colours. Deliberately not a
+ * photograph even once the product shots exist. A link preview is the one
+ * image somebody sees before they have seen anything else, and a single
+ * chocolate out of context says less about this business than its name does.
  *
  * The face is whatever @vercel/og bundles rather than Cormorant: pulling the
  * real display font in would mean a network fetch during the build, and a
- * build that can fail because a font CDN is slow is a bad trade for a card
- * that is about to be replaced by a photograph anyway. Letterspaced caps do
- * most of the work regardless.
+ * build that can fail because a font CDN is slow is a bad trade. Letterspaced
+ * caps do most of the work regardless.
  */
 
 export const alt =
@@ -29,7 +34,22 @@ const COCOA_DEEP = "#4e1901";
 const CREAM = "#f8e2c4";
 const GOLD = "#a67c3d";
 
-export default function Image() {
+export default async function Image() {
+  if (logoPresent()) {
+    // Already the right size and the right colour. Re-drawing it through
+    // ImageResponse would only re-encode it and risk a rounding difference in
+    // how the mark sits on the ground.
+    const card = await readFile(
+      join(process.cwd(), "public", "images", "og-logo.png"),
+    );
+    return new Response(new Uint8Array(card), {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, immutable, no-transform, max-age=31536000",
+      },
+    });
+  }
+
   return new ImageResponse(
     (
       <div

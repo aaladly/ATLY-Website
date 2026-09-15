@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Work_Sans } from "next/font/google";
 import { SITE_URL, SITE_URL_IS_PLACEHOLDER } from "@/lib/site";
+import { logoPresent } from "@/lib/images";
 import "./globals.css";
 
 // Serif display, matching the logo's classical serif treatment.
@@ -65,6 +66,28 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  /**
+   * The browser tab and the phone home screen.
+   *
+   * These are the two places the supplied logo goes, and the only two. It
+   * reads "ARTISAN CHOCOLATES" where the rest of the site — including the
+   * legal entity on the terms page — reads "Belgian Chocolate", so putting it
+   * in the header would print two names for one business on every page. At
+   * favicon size the words are not legible anyway; what carries is the mark.
+   *
+   * Declared conditionally rather than through the app/icon.png file
+   * convention, because that convention is a file that either exists in the
+   * repo or does not, and this one does not yet. Listing an icon that is not
+   * there costs a request to learn nothing.
+   */
+  icons: logoPresent()
+    ? {
+        icon: [{ url: "/images/icon-32.png", sizes: "32x32", type: "image/png" }],
+        apple: [
+          { url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+        ],
+      }
+    : undefined,
   /**
    * Indexing is off while the site has no real address configured.
    *
