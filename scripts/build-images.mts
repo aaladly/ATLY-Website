@@ -36,7 +36,9 @@ import {
   PHOTO_BUDGET_BYTES,
   FALLBACK_WIDTH,
   LOGO,
+  HERO,
   photoHeight,
+  heroHeight,
   sourceCandidates,
   sourceLabel,
 } from "../src/lib/images.ts";
@@ -172,6 +174,51 @@ async function buildPhoto(key: string): Promise<boolean> {
     console.log("    " + String(width).padStart(4) + "w  " + row.join("   "));
   }
 
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The hero crop
+// ---------------------------------------------------------------------------
+
+/**
+ * The wide crop of the hero photograph, for screens too wide to want a 4:5
+ * frame. Same source, same formats, different shape — this is art direction,
+ * not another size of the same picture.
+ */
+async function buildHero(): Promise<boolean> {
+  const slot = PHOTOS[HERO.photo];
+  const file = await findSource(slot.sourceBase);
+  if (file === null) return false; // already reported by buildPhoto
+
+  const input = await readFile(file);
+  console.log(
+    "\n  " + HERO.base + "  (" + HERO.aspect.w + ":" + HERO.aspect.h + " crop)",
+  );
+
+  for (const width of HERO.widths) {
+    const resized = sharp(input).resize(width, heroHeight(width), {
+      fit: "cover",
+      position: "centre",
+    });
+    const row: string[] = [];
+    for (const format of PHOTO_FORMATS) {
+      const pipeline = resized.clone();
+      const encoded =
+        format.ext === "avif"
+          ? pipeline.avif({ quality: format.quality })
+          : format.ext === "webp"
+            ? pipeline.webp({ quality: format.quality })
+            : pipeline.jpeg({ quality: format.quality, mozjpeg: true });
+      const out = await encoded.toBuffer();
+      await writeFile(
+        path.join(PRODUCTS_OUT, HERO.base + "-" + width + "." + format.ext),
+        out,
+      );
+      row.push(format.ext + " " + kb(out.length));
+    }
+    console.log("    " + String(width).padStart(4) + "w  " + row.join("   "));
+  }
   return true;
 }
 
@@ -498,6 +545,10 @@ const built: string[] = [];
 for (const key of PHOTO_KEYS) {
   if (await buildPhoto(key)) built.push(PHOTOS[key].base);
 }
+// Counted separately: the hero is another crop of a photograph already in the
+// list, not a fifth photograph. Reporting 5/4 would be its own small lie.
+const photoCount = built.length;
+if (await buildHero()) built.push(HERO.base);
 const logo = await buildLogo();
 
 if (!has("no-manifest")) {
@@ -525,10 +576,12 @@ if (!has("no-manifest")) {
   await writeFile(path.join(ROOT, "src/lib/images.generated.ts"), generated);
   console.log(
     "\n  manifest: " +
-      built.length +
+      photoCount +
       "/" +
       PHOTO_KEYS.length +
-      " photographs, logo " +
+      " photographs, hero crop " +
+      (built.includes(HERO.base) ? "built" : "skipped") +
+      ", logo " +
       (logo.present ? "present" : "missing"),
   );
 }

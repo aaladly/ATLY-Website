@@ -192,6 +192,53 @@ export const photoSrcSet = (base: string, ext: string): string =>
   PHOTO_WIDTHS.map((w) => `${photoUrl(base, w, ext)} ${w}w`).join(", ");
 
 // ---------------------------------------------------------------------------
+// The hero
+// ---------------------------------------------------------------------------
+
+/**
+ * The home page hero is art-directed: two different crops of one photograph,
+ * not one crop scaled.
+ *
+ * On a phone the frame is tall, so the 4:5 original is already the right shape
+ * and the existing derivatives are reused as they are. On anything wider a 4:5
+ * photograph stretched across the viewport would be enormous — you would scroll
+ * past a chocolate the size of a fist to reach the thing that says what this
+ * business is — so a 3:2 crop is generated instead. Centred, because the
+ * assortment fills the frame edge to edge and the rose row along the bottom is
+ * the part worth keeping.
+ *
+ * !! THE ORIGINAL IS 1122px WIDE !! -----------------------------------------
+ * That is the ceiling on how sharp a full-bleed hero can be. At 1600 the crop
+ * is already being enlarged about 1.4x, which is fine on a phone and soft on a
+ * large retina display. Going past 2000 would be inventing detail, so the list
+ * stops there. A re-export of this shot at 2400px or more is the only real fix,
+ * and it needs the photographer, not this script.
+ * ---------------------------------------------------------------------------
+ */
+export const HERO = {
+  /** Which photograph. Its portrait derivatives serve phones unchanged. */
+  photo: "collectionAssortment" as const,
+  base: "hero-assortment",
+  aspect: { w: 3, h: 2 },
+  widths: [1200, 1600, 2000] as const,
+  /** Below this, the portrait crop is used instead. */
+  wideFrom: "(min-width: 768px)",
+};
+
+export const heroHeight = (width: number): number =>
+  Math.round((width * HERO.aspect.h) / HERO.aspect.w);
+
+export const heroUrl = (width: number, ext: string): string =>
+  `${PRODUCTS_DIR}/${HERO.base}-${width}.${ext}`;
+
+export const heroSrcSet = (ext: string): string =>
+  HERO.widths.map((w) => `${heroUrl(w, ext)} ${w}w`).join(", ");
+
+/** The wide crop exists only once the pipeline has run. */
+export const heroWidePresent = (): boolean =>
+  GENERATED_PHOTOS.includes(HERO.base);
+
+// ---------------------------------------------------------------------------
 // The logo
 // ---------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Photo } from "@/components/Photo";
-import { Wordmark } from "@/components/Wordmark";
+import { HomeHero } from "@/components/HomeHero";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
 import { BRAND } from "@/lib/catalog";
 import { ProductAllergenLine } from "@/components/ProductAllergenLine";
@@ -23,60 +23,7 @@ export default async function Home() {
 
   return (
     <main>
-      {/* ---------------- Hero ---------------- */}
-      <section className="mx-auto max-w-6xl px-gutter pt-section pb-14">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            {/*
-              The hero lockup is the page's main heading. Without this the home
-              page has no h1 at all — headings would start at H2, which is wrong
-              for both screen readers and search engines. The visible wordmark
-              is decorative inside the heading; the accessible name is carried
-              by the sr-only text so the heading reads as one sentence.
-            */}
-            <h1>
-              <span className="sr-only">
-                ATLY Belgian Chocolate — handmade Belgian chocolate in New
-                Jersey
-              </span>
-              <span aria-hidden="true">
-                <Wordmark size="lg" className="items-start" />
-              </span>
-            </h1>
-            <p className="mt-8 max-w-md font-display text-display-m">
-              {BRAND.tagline}
-            </p>
-            <p className="mt-6 max-w-md text-body-l text-cocoa">
-              Handmade Belgian chocolate from a family kitchen in New Jersey,
-              made in small batches from {BRAND.cocoaPercent} Belgian
-              couverture.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Link
-                href="/shop"
-                className="inline-flex items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream no-underline transition-colors duration-200 hover:bg-cocoa"
-              >
-                Order online
-              </Link>
-              <span className="text-body-s text-cocoa">
-                {BRAND.secondaryTagline}
-              </span>
-            </div>
-          </div>
-
-          {/* The full lineup: the best establishing image there is, and the
-              largest thing above the fold — so it is the LCP element and the
-              only one on the site marked priority. */}
-          <div className="relative aspect-[4/5] w-full overflow-hidden">
-            <Photo
-              slot="collectionAssortment"
-              className="h-full w-full"
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              priority
-            />
-          </div>
-        </div>
-      </section>
+      <HomeHero />
 
       <DeliveryNotice tone="prominent" />
 

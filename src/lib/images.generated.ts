@@ -12,6 +12,7 @@ export const GENERATED_PHOTOS: readonly string[] = [
   "bar-milk-chocolate",
   "bonbons-6-piece",
   "bonbons-rose-3-piece",
+  "hero-assortment",
 ];
 
 export const GENERATED_LOGO = {
