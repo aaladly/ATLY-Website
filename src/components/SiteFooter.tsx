@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/lib/catalog";
-import { formatCents } from "@/lib/pricing";
+import { deliveryPolicySummary } from "@/lib/delivery";
 import type { DeliveryConfig } from "@/config/delivery";
 import { Wordmark } from "./Wordmark";
 import { SocialLinks } from "./SocialLinks";
@@ -13,9 +13,8 @@ import { CookieSettingsLink } from "./CookieConsent";
  * component for the sake of two numbers.
  */
 export function SiteFooter({ delivery }: { delivery: DeliveryConfig }) {
-  const freeLine = delivery.freeCounty.alwaysFree
-    ? `Free delivery throughout ${delivery.freeCountyName}, which we deliver by hand.`
-    : `Free delivery on orders of ${formatCents(delivery.freeCounty.thresholdCents)} or more in ${delivery.freeCountyName}, which we deliver by hand.`;
+  // Same sentence as everywhere else on the site, from the same helper.
+  const policy = deliveryPolicySummary(delivery);
 
   return (
     <footer className="mt-section border-t border-rule-strong">
@@ -39,8 +38,7 @@ export function SiteFooter({ delivery }: { delivery: DeliveryConfig }) {
               We deliver within {delivery.allowedStateName} only.
             </p>
             <p className="mt-3 text-body-s text-cocoa">
-              {freeLine} {formatCents(delivery.standardCents)} elsewhere in{" "}
-              {delivery.allowedStateName}.
+              {policy} We deliver {delivery.freeCountyName} by hand.
             </p>
           </div>
         </div>

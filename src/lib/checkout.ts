@@ -18,7 +18,11 @@ import {
   type CartItem,
   type ProductKind,
 } from "./pricing.ts";
-import { quoteDelivery, totalPackagedWeightOz } from "./delivery.ts";
+import {
+  quoteDelivery,
+  totalPackagedWeightOz,
+  type DeliveryQuote,
+} from "./delivery.ts";
 import { calculateTax, type TaxConfig } from "./tax.ts";
 import type { DeliveryConfig } from "@/config/delivery";
 
@@ -117,7 +121,20 @@ export type ValidatedOrder = {
 };
 
 export type CheckoutResult =
-  | { ok: true; order: ValidatedOrder }
+  | {
+      ok: true;
+      order: ValidatedOrder;
+      /**
+       * The delivery quote behind order.deliveryCents.
+       *
+       * Carried alongside rather than folded into ValidatedOrder because it is
+       * presentation, not record: what the delivery WOULD have cost, and how
+       * much more would earn free delivery. The first is meaningless once an
+       * order is placed and the second is always zero by then. The checkout
+       * summary needs both to say "FREE" honestly.
+       */
+      delivery: Extract<DeliveryQuote, { kind: "quoted" }>;
+    }
   | { ok: false; issues: ValidationIssue[] };
 
 /**
@@ -332,6 +349,7 @@ export function validateCheckout(
 
   return {
     ok: true,
+    delivery,
     order: {
       reference: deps.makeReference(),
       contact,

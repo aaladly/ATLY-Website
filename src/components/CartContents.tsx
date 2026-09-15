@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCart } from "./useCart";
 import { findVariant } from "@/lib/catalog";
 import { DeliveryNotice } from "./DeliveryNotice";
-import { DeliveryEstimator } from "./DeliveryEstimator";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import {
   findFreeUpgrade,
@@ -272,8 +271,22 @@ export function CartContents() {
           )}
         </dl>
 
+        {/*
+          No ZIP box here any more.
+
+          It used to ask for a ZIP and quote delivery in the cart, which meant
+          typing the same ZIP twice — once here and once into the delivery
+          address on the next page — and gave two places for a fee to be
+          calculated and disagree. Checkout takes the ZIP from the address the
+          customer is already entering and quotes from the server, so the
+          figure shown is produced by the code that authorises the charge.
+
+          What stays is the promise itself, because a customer deciding whether
+          to add another bar needs to know free delivery exists before they get
+          to the address step. DeliveryNotice carries it.
+        */}
         <div className="mt-8 border-t border-rule pt-6">
-          <DeliveryEstimator />
+          <DeliveryNotice />
         </div>
 
         <div className="mt-8">

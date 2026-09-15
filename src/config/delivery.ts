@@ -39,6 +39,24 @@ export type DeliveryConfig = {
   freeCountyName: string;
 
   /**
+   * Free delivery once the subtotal reaches this, ANYWHERE we deliver.
+   *
+   * Distinct from freeCounty.thresholdCents, which only ever applied inside
+   * the free county. This is the floor for everyone else: Hunterdon is free
+   * because the drive is short, and an order big enough elsewhere in New
+   * Jersey earns the same.
+   *
+   * null switches it off entirely, which is what it was before 2026-09-15 —
+   * the engine had the machinery but no order outside Hunterdon could ever
+   * reach free delivery at any size.
+   */
+  freeOver: {
+    thresholdCents: number;
+    /** Whether a subtotal exactly equal to the threshold qualifies. */
+    inclusive: boolean;
+  } | null;
+
+  /**
    * ZIP codes that qualify for free delivery.
    *
    * !! UNVERIFIED !! ---------------------------------------------------------
@@ -109,6 +127,17 @@ export const DELIVERY_CONFIG: DeliveryConfig = {
     thresholdInclusive: true,
   },
   freeCountyName: "Hunterdon County",
+
+  /**
+   * Owner-approved 2026-09-15: free delivery on $50 or more, outside Hunterdon
+   * as well as in it.
+   *
+   * INCLUSIVE, so exactly $50.00 qualifies. "Over $50" is ambiguous at the
+   * boundary and the customer-facing copy says "$50 or more" so that nobody
+   * has to guess — a customer who lands on $50.00 and is charged $5.99 has
+   * been told one thing and billed another.
+   */
+  freeOver: { thresholdCents: 5000, inclusive: true },
 
   // Draft list — see the UNVERIFIED warning above.
   freeCountyZips: [

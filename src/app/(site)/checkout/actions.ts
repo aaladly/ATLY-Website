@@ -74,6 +74,21 @@ export async function quoteOrder(request: CheckoutRequest) {
 
   return {
     ok: true as const,
-    totals: { subtotalCents, savingsCents, deliveryCents, taxCents, totalCents, inFreeCounty },
+    totals: {
+      subtotalCents,
+      savingsCents,
+      deliveryCents,
+      taxCents,
+      totalCents,
+      inFreeCounty,
+      /*
+        Two presentation figures, computed by the same call that produced
+        deliveryCents so they cannot disagree with it: what delivery would
+        have cost, and what would still earn it free. Both come from the
+        server for the same reason the totals do.
+      */
+      deliveryStandardCents: result.delivery.standardCostCents,
+      centsToFreeDelivery: result.delivery.centsToFreeDelivery,
+    },
   };
 }

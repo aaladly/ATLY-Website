@@ -57,6 +57,7 @@ const DELIVERY: DeliveryConfig = {
   freeCountyName: "Hunterdon County",
   freeCountyZips: ["08822"],
   freeCountyZipsVerified: true,
+  freeOver: null,
   weightTiers: [],
   excludedZips: [],
 };
@@ -439,5 +440,73 @@ describe("terms and allergen acceptance", () => {
     assert.ok(fields.includes("acceptedTerms"));
     assert.ok(fields.includes("contact.name"));
     assert.ok(fields.includes("contact.email"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The delivery fee is not something the browser gets a say in
+// ---------------------------------------------------------------------------
+
+describe("delivery is recomputed, never accepted", () => {
+  const LIVE: CheckoutDeps = {
+    ...DEPS,
+    deliveryConfig: {
+      ...DELIVERY,
+      freeOver: { thresholdCents: 5000, inclusive: true },
+    },
+  };
+
+  test("a fee smuggled into the request is ignored", () => {
+    // CheckoutRequest has no delivery field, so this cannot be written without
+    // a cast — which is the point. The cast is here to prove that even a
+    // hand-rolled POST carrying extra keys changes nothing, because the server
+    // reads the address and the cart and works the figure out for itself.
+    const tampered = {
+      ...request({ items: [{ variantId: "bars/plain", quantity: 1 }] }),
+      deliveryCents: 0,
+      totalCents: 1,
+      inFreeCounty: true,
+    } as CheckoutRequest;
+
+    const result = validateCheckout(tampered, LIVE);
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.order.deliveryCents, 599);
+    assert.equal(result.order.inFreeCounty, false);
+    assert.ok(result.order.totalCents > 599);
+  });
+
+  test("the $50 rule is applied server-side, from the recomputed subtotal", () => {
+    // Quantity chosen so the bundle-priced subtotal clears $50 on the server.
+    const result = validateCheckout(
+      request({ items: [{ variantId: "bars/plain", quantity: 12 }] }),
+      LIVE,
+    );
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.ok(result.order.subtotalCents >= 5000, "fixture should clear the threshold");
+    assert.equal(result.order.deliveryCents, 0);
+    assert.equal(result.delivery.standardCostCents, 599);
+  });
+
+  test("the total the customer is quoted is the total that is charged", () => {
+    // The quote action and the place action call this same function. If these
+    // ever diverge, somebody is shown one number and billed another.
+    const req = request({ items: [{ variantId: "bars/plain", quantity: 12 }] });
+    const a = validateCheckout(req, LIVE);
+    const b = validateCheckout(req, LIVE);
+    assert.equal(a.ok && b.ok && a.order.totalCents, b.ok ? b.order.totalCents : -1);
+  });
+
+  test("out-of-state is still refused when the order qualifies for free delivery", () => {
+    const result = validateCheckout(
+      request({
+        items: [{ variantId: "bars/plain", quantity: 12 }],
+        address: { line1: "1 Broadway", line2: "", city: "New York", state: "NY", zip: "10001" },
+      }),
+      LIVE,
+    );
+    assert.equal(result.ok, false);
+    assert.ok(issueFields(result).some((f) => f.startsWith("address.")));
   });
 });

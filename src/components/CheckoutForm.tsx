@@ -16,6 +16,10 @@ type Totals = {
   taxCents: number;
   totalCents: number;
   inFreeCounty: boolean;
+  /** What delivery would have cost. Equal to deliveryCents when nothing was waived. */
+  deliveryStandardCents: number;
+  /** How much more would earn free delivery, or null when there is nothing to reach. */
+  centsToFreeDelivery: number | null;
 };
 
 const EMPTY_FORM = {
@@ -278,15 +282,23 @@ export function CheckoutForm() {
             {totals.savingsCents > 0 && (
               <Row label="Bundle savings" value={`−${formatCents(totals.savingsCents)}`} accent />
             )}
-            <Row
-              label="Delivery"
-              value={totals.deliveryCents === 0 ? "Free" : formatCents(totals.deliveryCents)}
-            />
+            <DeliveryRow totals={totals} />
             <Row label="Sales tax" value={formatCents(totals.taxCents)} />
             <div className="flex items-baseline justify-between gap-4 border-t border-rule pt-3">
               <dt className="text-body-m">Total</dt>
               <dd className="text-display-s tabular-nums">{formatCents(totals.totalCents)}</dd>
             </div>
+
+            {/* The nudge, after the total so it reads as "and here is how to
+                do better" rather than interrupting the arithmetic. Only ever
+                shown when free delivery is genuinely reachable — the server
+                sends null when it is not, and telling somebody to spend more
+                for a discount they cannot get is a lie with a price on it. */}
+            {totals.centsToFreeDelivery !== null && (
+              <p className="pt-1 text-body-s text-gold-deep">
+                Add {formatCents(totals.centsToFreeDelivery)} more for free delivery.
+              </p>
+            )}
           </dl>
         ) : quoteIssues.length > 0 ? (
           /* The server has already refused this order. Saying so here, while
@@ -397,6 +409,52 @@ export function CheckoutForm() {
         </Link>
       </p>
     </form>
+  );
+}
+
+/**
+ * The delivery line.
+ *
+ * Free delivery is worth something, so it is shown as something: the word FREE
+ * with the price it replaced struck through beside it, and the saving spelled
+ * out underneath. "Free" on its own is a word where a number should be, and it
+ * asks the customer to remember what they were avoiding.
+ *
+ * The struck-through figure is only rendered when it is genuinely higher than
+ * what they are paying. A Hunterdon order whose weight cannot be priced comes
+ * back free with a standard cost of zero, and striking through nothing to
+ * claim a saving of nothing would be theatre.
+ */
+function DeliveryRow({ totals }: { totals: Totals }) {
+  const free = totals.deliveryCents === 0;
+  const saved = totals.deliveryStandardCents - totals.deliveryCents;
+
+  if (!free) {
+    return <Row label="Delivery" value={formatCents(totals.deliveryCents)} />;
+  }
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-4">
+        <dt className="text-body-m">Delivery</dt>
+        <dd className="tabular-nums text-body-m">
+          {saved > 0 && (
+            <span className="mr-2 text-cocoa line-through">
+              {/* Read out as well as seen: a screen reader gets "was $5.99"
+                  rather than a bare number next to the word free. */}
+              <span className="sr-only">was </span>
+              {formatCents(totals.deliveryStandardCents)}
+            </span>
+          )}
+          <strong className="uppercase text-gold-deep">Free</strong>
+        </dd>
+      </div>
+      {saved > 0 && (
+        <p className="mt-1 text-body-s text-gold-deep">
+          You saved {formatCents(saved)} on delivery.
+        </p>
+      )}
+    </div>
   );
 }
 

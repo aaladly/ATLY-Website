@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCents } from "@/lib/pricing";
+import { deliveryPolicySummary } from "@/lib/delivery";
 import { useDeliveryConfig } from "./StorefrontSettings";
 
 /**
@@ -24,12 +24,9 @@ export function DeliveryNotice({
   tone?: "prominent" | "inline";
 }) {
   const config = useDeliveryConfig();
-  const standard = formatCents(config.standardCents);
   const stateOnly = config.allowedStateName;
-  const freeCounty = config.freeCountyName;
-  const freeLine = config.freeCounty.alwaysFree
-    ? `Free delivery throughout ${freeCounty}.`
-    : `Free delivery on orders of ${formatCents(config.freeCounty.thresholdCents)} or more in ${freeCounty}.`;
+  // One sentence, built from the live rules. See deliveryPolicySummary.
+  const policy = deliveryPolicySummary(config);
 
   if (tone === "prominent") {
     return (
@@ -40,9 +37,7 @@ export function DeliveryNotice({
             We currently deliver within <strong>{stateOnly} only</strong> — we
             are not shipping nationwide yet.
           </p>
-          <p className="mt-1 text-body-s text-cocoa">
-            {freeLine} {standard} elsewhere in {stateOnly}.
-          </p>
+          <p className="mt-1 text-body-s text-cocoa">{policy}</p>
         </div>
       </aside>
     );
@@ -51,7 +46,7 @@ export function DeliveryNotice({
   return (
     <p className="text-body-s text-cocoa">
       <strong className="text-cocoa-deep">{stateOnly} delivery only.</strong>{" "}
-      {freeLine} {standard} elsewhere in {stateOnly}.
+      {policy}
     </p>
   );
 }

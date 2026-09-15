@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 
 import {
   quoteDelivery,
+  deliveryPolicySummary,
   normalizeZip,
   normalizeState,
   findWeightTier,
@@ -27,6 +28,7 @@ const BASE: DeliveryConfig = {
   freeCountyName: "Hunterdon County",
   freeCountyZips: ["08822", "08809"],
   freeCountyZipsVerified: true,
+  freeOver: null,
   weightTiers: [],
   excludedZips: [],
 };
@@ -274,5 +276,209 @@ describe("order weight", () => {
 
   test("an empty order weighs nothing", () => {
     assert.equal(totalPackagedWeightOz([]), 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Free delivery over $50, outside the free county as well as in it
+// ---------------------------------------------------------------------------
+// Owner-approved 2026-09-15. Before this, no order outside Hunterdon could
+// reach free delivery at any size — the engine had a threshold but it was
+// gated behind being in the county.
+
+describe("free delivery over $50", () => {
+  /** Production shape: Hunterdon always free, $50 floor for everyone else. */
+  const LIVE: Partial<DeliveryConfig> = {
+    freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
+    freeOver: { thresholdCents: 5000, inclusive: true },
+  };
+
+  const HUNTERDON = "08822";
+  const ELSEWHERE = "07030"; // Hoboken — in New Jersey, outside the county.
+
+  describe("the boundary, outside the county", () => {
+    test("$49.99 pays the standard rate", () => {
+      const result = quote(ELSEWHERE, 4999, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.costCents, 599);
+      assert.equal(result.isFree, false);
+    });
+
+    test("$50.00 exactly is free", () => {
+      // Inclusive on purpose, and the copy says "$50 or more" to match. A
+      // customer who lands on exactly fifty dollars and is charged $5.99 has
+      // been told one thing and billed another.
+      const result = quote(ELSEWHERE, 5000, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.costCents, 0);
+      assert.equal(result.isFree, true);
+    });
+
+    test("$50.01 is free", () => {
+      const result = quote(ELSEWHERE, 5001, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.costCents, 0);
+    });
+  });
+
+  describe("what the customer is shown", () => {
+    test("a waived fee reports what it would have cost", () => {
+      // This is what the checkout summary strikes through. Without it, "FREE"
+      // is a word where a number should be.
+      const result = quote(ELSEWHERE, 6000, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.costCents, 0);
+      assert.equal(result.standardCostCents, 599);
+    });
+
+    test("a paid fee reports the same figure twice, so nothing is struck through", () => {
+      const result = quote(ELSEWHERE, 4999, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.standardCostCents, result.costCents);
+    });
+
+    test("the nudge names the exact shortfall", () => {
+      const result = quote(ELSEWHERE, 4250, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.centsToFreeDelivery, 750);
+    });
+
+    test("there is no nudge once free delivery is reached", () => {
+      const result = quote(ELSEWHERE, 5000, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.centsToFreeDelivery, null);
+    });
+
+    test("there is no nudge in Hunterdon, where it is already free", () => {
+      const result = quote(HUNTERDON, 200, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.centsToFreeDelivery, null);
+      assert.equal(result.costCents, 0);
+    });
+
+    test("with the rule off, no nudge outside the county at any size", () => {
+      // The state before 2026-09-15. Promising free delivery that cannot be
+      // reached is worse than promising nothing.
+      const off: Partial<DeliveryConfig> = {
+        freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
+        freeOver: null,
+      };
+      for (const subtotal of [100, 4999, 5000, 100000]) {
+        const result = quote(ELSEWHERE, subtotal, off);
+        if (result.kind !== "quoted") return assert.fail("expected a quote");
+        assert.equal(result.centsToFreeDelivery, null);
+        assert.equal(result.costCents, 599);
+      }
+    });
+  });
+
+  describe("the county keeps its own promise", () => {
+    test("a tiny Hunterdon order is still free", () => {
+      // The $50 floor must not become a floor the county has to clear too.
+      const result = quote(HUNTERDON, 1, LIVE);
+      if (result.kind !== "quoted") return assert.fail("expected a quote");
+      assert.equal(result.costCents, 0);
+      assert.equal(result.inFreeCounty, true);
+    });
+
+    test("$49.99 in Hunterdon is free, $49.99 outside it is not", () => {
+      const inside = quote(HUNTERDON, 4999, LIVE);
+      const outside = quote(ELSEWHERE, 4999, LIVE);
+      if (inside.kind !== "quoted" || outside.kind !== "quoted") {
+        return assert.fail("expected quotes");
+      }
+      assert.equal(inside.costCents, 0);
+      assert.equal(outside.costCents, 599);
+    });
+  });
+
+  describe("an address we cannot deliver to", () => {
+    test("a malformed ZIP is refused at every subtotal, free or not", () => {
+      // Being over $50 must not buy a way past the address checks.
+      for (const subtotal of [4999, 5000, 5001]) {
+        const result = quote("123", subtotal, LIVE);
+        assert.equal(result.kind, "unavailable");
+        if (result.kind !== "unavailable") return;
+        assert.equal(result.reason, "invalid_zip");
+      }
+    });
+
+    test("out of state is refused at every subtotal", () => {
+      for (const subtotal of [4999, 5000, 5001]) {
+        const result = quote("10001", subtotal, LIVE, "NY");
+        assert.equal(result.kind, "unavailable");
+        if (result.kind !== "unavailable") return;
+        assert.equal(result.reason, "out_of_state");
+      }
+    });
+
+    test("an excluded area is refused even over the threshold", () => {
+      const result = quote(ELSEWHERE, 9999, {
+        ...LIVE,
+        excludedZips: [ELSEWHERE],
+      });
+      assert.equal(result.kind, "unavailable");
+      if (result.kind !== "unavailable") return;
+      assert.equal(result.reason, "excluded_area");
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The promise the site makes, in one place
+// ---------------------------------------------------------------------------
+// This sentence appears in the footer, the cart, the home page, the shop and
+// every product page. It is built from config so it cannot go stale in four of
+// those the day a rule changes — and asserted here because it is customer
+// facing copy about money, which is the kind of thing that is wrong silently.
+
+describe("the delivery policy summary", () => {
+  const LIVE: DeliveryConfig = {
+    ...BASE,
+    freeCounty: { alwaysFree: true, thresholdCents: 5000, thresholdInclusive: true },
+    freeOver: { thresholdCents: 5000, inclusive: true },
+  };
+
+  test("names both promises and the fallback rate", () => {
+    const summary = deliveryPolicySummary(LIVE);
+    assert.match(summary, /Free delivery throughout Hunterdon County/);
+    assert.match(summary, /\$50 or more anywhere in New Jersey/);
+    assert.match(summary, /\$5\.99 otherwise/);
+  });
+
+  test("every figure keeps its dollar sign", () => {
+    // Caught a real one: a bad edit to the formatter produced "orders of 50 or
+    // more" and "5.99 otherwise", and every other test still passed because
+    // none of them looked at the formatted string.
+    const summary = deliveryPolicySummary(LIVE);
+    const figures = summary.match(/\d+(\.\d{2})?/g) ?? [];
+    assert.ok(figures.length >= 2, "expected some figures");
+    for (const figure of figures) {
+      assert.ok(
+        summary.includes("$" + figure),
+        `"${figure}" appears without a dollar sign in: ${summary}`,
+      );
+    }
+  });
+
+  test("whole amounts drop their cents, amounts with cents keep them", () => {
+    const summary = deliveryPolicySummary(LIVE);
+    assert.ok(summary.includes("$50 "), "expected $50, not $50.00");
+    assert.ok(!summary.includes("$50.00"));
+    assert.ok(summary.includes("$5.99"));
+  });
+
+  test("with the statewide rule off, it promises only the county", () => {
+    const summary = deliveryPolicySummary({ ...LIVE, freeOver: null });
+    assert.match(summary, /Free delivery throughout Hunterdon County\./);
+    assert.ok(!summary.includes("anywhere"));
+  });
+
+  test("with a county threshold instead of always-free, it says so", () => {
+    const summary = deliveryPolicySummary({
+      ...LIVE,
+      freeCounty: { alwaysFree: false, thresholdCents: 3500, thresholdInclusive: true },
+    });
+    assert.match(summary, /\$35 or more in Hunterdon County/);
   });
 });
