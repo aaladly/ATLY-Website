@@ -56,6 +56,7 @@ Then open http://localhost:3100.
 | `npm run lint` | ESLint (`next lint` was removed in Next 16) |
 | `npm run check:contrast` | WCAG AA audit of the palette; non-zero exit on failure |
 | `npm run check:launch` | Is this ready to take money from a stranger? Non-zero exit while not |
+| `npm run build:images` | Optimise `assets/source/` into `public/images/`; non-zero exit if a source is missing or a derivative is over budget |
 | `npm test` | Unit tests (Node built-in runner, no dependency) |
 | `npm run admin:password` | Make an admin password hash. Never stores or prints the password |
 | `npm run admin:secret` | Make an admin session secret |
@@ -85,7 +86,8 @@ src/lib/               business logic and service clients
 src/lib/settings/      admin-editable overrides on top of the values in code
 src/types/             shared TypeScript types
 supabase/migrations/   SQL migrations
-public/images/         logo and product photography
+assets/source/         full-resolution originals — NEVER served, see its README
+public/images/         the optimised derivatives the site actually loads
 reference/             source material (market signage, spec documents)
 ```
 
@@ -209,6 +211,32 @@ risk".
 > reads it and decides whether to eat. The owner writes these, from the actual recipes
 > and the actual labels in their kitchen.
 
+## Photography
+
+Originals go in `assets/source/` and are never served. `npm run build:images`
+turns them into the derivatives in `public/images/` that the site loads, and
+rewrites `src/lib/images.generated.ts` with what it produced — so a photograph
+appears on the site the moment its file exists, with no flag to remember.
+
+Until then, each slot renders a "Photograph pending" panel naming the file it is
+waiting for. Deliberately obvious: this is a photography-led site, and a missing
+photo should never reach a customer looking like a finished panel.
+
+What the pipeline does per photograph: AVIF (q55), WebP (q75) and JPEG (q82) at
+400, 800 and 1200 wide, 4:5 throughout, EXIF stripped. It **fails the build** if
+an 800px derivative lands over 150 KB, because the customer this shop was built
+for is on a phone at a market table on cellular data.
+
+The pages render a hand-written `<picture>` rather than `next/image`. The
+derivatives are already generated, and Hostinger is one modest Node process —
+next/image would re-encode the same images inside the process that is meant to
+be serving the shop. Static files off disk cost it nothing.
+
+Sizes and formats live in `src/lib/images.ts`, which both the script and the
+components read. They are the same file on purpose: if the widths lived in two
+places they would drift, and a 404 on a product photograph still lays out
+perfectly, so nobody would notice.
+
 ## Going live
 
 ```bash
@@ -324,8 +352,9 @@ Tracked here so they are not silently guessed at.
 - **Logo wordmark** — the supplied logo reads "ARTISAN CHOCOLATES"; every site use must
   read "BELGIAN CHOCOLATE". Corrected file, or rebuild the lockup in SVG? Rebuilding
   needs the original artwork in hand. (Step 2, blocks Step 4)
-- **Assets** — `public/images/` and `reference/` are still empty. Step 4 is
-  photography-led and cannot start without them.
+- **Assets** — `assets/source/` is still empty, so every photograph on the site is a
+  "Photograph pending" placeholder naming the file it wants. The pipeline is built and
+  tested; it needs the five originals. See `assets/source/README.md`.
 - **Delivery rates above 48 oz** — the flat $5.99 covers up to 3 lb. Rates for
   heavier orders are still needed, along with packaged weights to measure against.
   (Step 6)

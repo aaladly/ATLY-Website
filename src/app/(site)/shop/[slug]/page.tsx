@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Photo } from "@/components/Photo";
+import { ProductGallery } from "@/components/ProductGallery";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
 import { AddToCart } from "@/components/AddToCart";
 import { AllergenNotice } from "@/components/AllergenNotice";
@@ -12,7 +12,7 @@ import {
   productAllergens,
   ALLERGEN_LABEL,
 } from "@/lib/catalog";
-import { PRODUCT_IMAGE } from "@/lib/images";
+import { PRODUCT_PHOTOS } from "@/lib/images";
 import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
 
@@ -68,14 +68,14 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
 
       <section className="mx-auto max-w-6xl px-gutter pt-8 pb-section">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="relative aspect-[4/5] w-full overflow-hidden">
-            <Photo
-              slot={PRODUCT_IMAGE[product.slug]}
-              className="h-full w-full"
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              priority
-            />
-          </div>
+          {/* The detail page is where somebody decides, so it gets every
+              view there is — and the frame is 4:5 because the photographs are,
+              so nothing is cropped to suit the layout. */}
+          <ProductGallery
+            photos={PRODUCT_PHOTOS[product.slug] ?? []}
+            productName={product.name}
+            priority
+          />
 
           <div>
             <h1 className="text-display-xl">{product.name}</h1>

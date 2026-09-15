@@ -67,7 +67,7 @@ export default function AboutPage() {
         <div className="on-dark mx-auto grid max-w-6xl items-center gap-12 px-gutter py-section-lg lg:grid-cols-2 lg:gap-16">
           <div className="relative aspect-[4/5] w-full overflow-hidden">
             <Photo
-              slot="bonbonsRose"
+              slot="bonbons6Piece"
               className="h-full w-full"
               sizes="(min-width: 1024px) 50vw, 100vw"
             />

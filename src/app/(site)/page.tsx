@@ -4,7 +4,7 @@ import { Photo } from "@/components/Photo";
 import { Wordmark } from "@/components/Wordmark";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
 import { BRAND, productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
-import { PRODUCT_IMAGE } from "@/lib/images";
+import { productPhoto } from "@/lib/images";
 import { priceQuantity, formatCents, summarizeTiers } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
 
@@ -63,9 +63,12 @@ export default async function Home() {
             </div>
           </div>
 
+          {/* The full lineup: the best establishing image there is, and the
+              largest thing above the fold — so it is the LCP element and the
+              only one on the site marked priority. */}
           <div className="relative aspect-[4/5] w-full overflow-hidden">
             <Photo
-              slot="heroSpread"
+              slot="collectionAssortment"
               className="h-full w-full"
               sizes="(min-width: 1024px) 50vw, 100vw"
               priority
@@ -126,9 +129,9 @@ export default async function Home() {
           vaguely as "fine Belgian chocolate". */}
       <section className="bg-cocoa-deep text-cream">
         <div className="on-dark mx-auto grid max-w-6xl items-center gap-12 px-gutter py-section lg:grid-cols-2 lg:gap-16">
-          <div className="relative aspect-[4/3] w-full overflow-hidden">
+          <div className="relative aspect-[4/5] w-full overflow-hidden">
             <Photo
-              slot="bonbonsRose"
+              slot="bonbonsRose3Piece"
               className="h-full w-full"
               sizes="(min-width: 1024px) 50vw, 100vw"
             />
@@ -166,6 +169,7 @@ export default async function Home() {
             const best = [...tiers].sort((a, b) => b.size - a.size)[0];
             const bestPrice = priceQuantity(best.size, tiers);
             const allergens = productAllergens(product);
+            const photo = productPhoto(product.slug);
             const soldOut =
               !product.isAvailable || product.variants.every((v) => !v.isAvailable);
 
@@ -175,13 +179,15 @@ export default async function Home() {
                   href={`/shop/${product.slug}`}
                   className="group no-underline"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
-                    <Photo
-                      slot={PRODUCT_IMAGE[product.slug]}
-                      className="h-full w-full"
-                      sizes="(min-width: 640px) 50vw, 100vw"
-                    />
-                  </div>
+                  {photo && (
+                    <div className="relative aspect-[4/5] w-full overflow-hidden">
+                      <Photo
+                        slot={photo}
+                        className="h-full w-full"
+                        sizes="(min-width: 640px) 50vw, 100vw"
+                      />
+                    </div>
+                  )}
                   <h3 className="mt-6 text-display-m group-hover:text-gold-deep">
                     {product.name}
                     {soldOut && (

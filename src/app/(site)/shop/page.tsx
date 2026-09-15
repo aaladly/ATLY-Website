@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Photo } from "@/components/Photo";
 import { DeliveryNotice } from "@/components/DeliveryNotice";
 import { productAllergens, ALLERGEN_LABEL } from "@/lib/catalog";
-import { PRODUCT_IMAGE } from "@/lib/images";
+import { productPhoto } from "@/lib/images";
 import { priceQuantity, formatCents } from "@/lib/pricing";
 import { getStorefrontSettings } from "@/lib/settings/resolve";
 
@@ -37,19 +37,22 @@ export default async function Shop() {
               (a, b) => a.size - b.size,
             );
             const allergens = productAllergens(product);
+            const photo = productPhoto(product.slug);
             const available = product.variants.filter((v) => v.isAvailable);
             const soldOut = !product.isAvailable || available.length === 0;
 
             return (
               <article key={product.slug} className="flex flex-col">
                 <Link href={`/shop/${product.slug}`} className="group no-underline">
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
-                    <Photo
-                      slot={PRODUCT_IMAGE[product.slug]}
-                      className="h-full w-full"
-                      sizes="(min-width: 1024px) 50vw, 100vw"
-                    />
-                  </div>
+                  {photo && (
+                    <div className="relative aspect-[4/5] w-full overflow-hidden">
+                      <Photo
+                        slot={photo}
+                        className="h-full w-full"
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                      />
+                    </div>
+                  )}
                   <h2 className="mt-6 text-display-m group-hover:text-gold-deep">
                     {product.name}
                     {soldOut && (
