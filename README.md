@@ -211,6 +211,47 @@ risk".
 > reads it and decides whether to eat. The owner writes these, from the actual recipes
 > and the actual labels in their kitchen.
 
+## Database
+
+Two implementations behind one tiny interface, chosen by configuration. Set
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` and orders and admin
+settings go to Postgres. Leave either unset and they are held in memory and
+lost on restart. There is no third state.
+
+```
+src/lib/supabase.ts              client, or null when unconfigured
+src/lib/orders/rows.ts           row <-> domain mapping, pure and tested
+src/lib/orders/supabaseStore.ts  orders in Postgres
+src/lib/settings/supabaseStore.ts  admin overrides, one jsonb row
+```
+
+### Connecting a project
+
+1. Create a project at supabase.com. Any region; pick one near New Jersey.
+2. **SQL Editor -> New query**, and run the files in `supabase/migrations/`
+   **in order**: `0001`, then `0002`, then `0003`. Each is idempotent enough
+   to re-run, but the order matters — 0003 alters tables 0001 creates.
+3. **Project Settings -> API**: copy the Project URL and the `service_role`
+   key into `.env.local`.
+4. Restart the dev server. `npm run check:launch` stops reporting "No
+   database", and the red banner in the admin goes away by itself.
+
+### Why an order is written by a database function
+
+`place_order()` in migration 0003 inserts the customer, the order and its line
+items in one transaction. Sent as three separate requests they can
+half-succeed, and the specific way they half-succeed is an order row with no
+items — a charge with no record of what was bought or where it goes.
+
+### The service role key
+
+It bypasses row level security completely: every table holding customer data
+has RLS on with no permissive policy, so this key is the only way in, and
+anything holding it can read every order and address in the business.
+`src/lib/supabase.ts` carries `import "server-only"`, which makes importing it
+from a client component a build error rather than a leak. Never rename it to
+anything starting `NEXT_PUBLIC_`.
+
 ## Photography
 
 Originals go in `assets/source/` and are never served. `npm run build:images`

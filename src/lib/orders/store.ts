@@ -2,26 +2,28 @@ import "server-only";
 
 import type { ValidatedOrder } from "../checkout";
 import type { OrderStatus } from "./status";
+import { SUPABASE_CONFIGURED } from "../supabase.ts";
+import { supabaseOrderStore } from "./supabaseStore.ts";
 
 /**
  * Order persistence.
  *
- * !! THE DEFAULT IMPLEMENTATION IS A DEVELOPMENT STAND-IN !! -----------------
- * There is no Supabase project connected yet, so orders are held in a module
- * level Map. That means:
- *   - every order is lost when the server restarts
- *   - a redeploy loses everything taken since the last one, and nobody is
- *     watching for that
+ * TWO IMPLEMENTATIONS, CHOSEN BY CONFIGURATION ------------------------------
+ * With a Supabase project connected, orders go to Postgres through the
+ * place_order() function in migration 0003 — one transaction, so an order and
+ * its line items land together or not at all.
  *
- * Hosting is Hostinger, i.e. one long-running Node process rather than a fleet
- * of serverless instances, so the data at least survives BETWEEN requests. That
- * makes the failure quieter, not smaller: it works perfectly right up until a
- * restart, which is the worst way for a data store to be wrong.
+ * Without one, they are held in a module-level Map so the checkout flow can
+ * still be built and exercised end to end. That stand-in loses every order
+ * when the server restarts. Hosting is Hostinger, one long-running Node
+ * process rather than a fleet of serverless instances, so the data survives
+ * BETWEEN requests — which makes the failure quieter, not smaller. It works
+ * perfectly right up until a restart, and the thing lost is a paid order with
+ * an address attached.
  *
- * It exists so the checkout flow can be built and exercised end to end. It is
- * NOT a launch configuration. Replace it with the Supabase implementation
- * against the orders / order_items tables in migration 0001 before anything
- * real is taken. The interface is deliberately tiny so that swap is small.
+ * The selection is at the bottom of this file. `npm run check:launch` blocks
+ * on the memory store, and the admin says so on every page, so nobody takes a
+ * real order behind it by accident.
  * ---------------------------------------------------------------------------
  */
 
@@ -81,4 +83,20 @@ export const inMemoryOrderStore: OrderStore = {
   },
 };
 
-export const orderStore: OrderStore = inMemoryOrderStore;
+/**
+ * True when an order survives a restart. The admin banner reads this rather
+ * than assuming, so the warning disappears by itself once Supabase is wired in
+ * and nobody has to remember to delete it.
+ */
+export const ORDERS_ARE_DURABLE = SUPABASE_CONFIGURED;
+
+/*
+  Both are imported statically, which is safe because importing the Supabase
+  store constructs nothing: lib/supabase.ts builds its client on first use and
+  caches it, so an unconfigured project loads the module and never makes a
+  client. Selecting with a dynamic import instead would make this export a
+  promise and push async into every caller, for no gain.
+*/
+export const orderStore: OrderStore = SUPABASE_CONFIGURED
+  ? supabaseOrderStore
+  : inMemoryOrderStore;

@@ -75,14 +75,21 @@ export default async function DashboardLayout({
         who changes a price, sees it take effect, and finds it reverted
         tomorrow with no explanation.
         This disappears by itself when SETTINGS_ARE_DURABLE flips.
+
+        It now names ORDERS too, because they are the expensive half. A price
+        that reverts is an annoyance the owner can see and redo. An order that
+        vanishes is somebody who paid, is expecting chocolate on Saturday, and
+        whose address is gone — and nothing anywhere says so. Both flip on the
+        same switch, so both are said in the same place.
       */}
       {!SETTINGS_ARE_DURABLE && (
         <div className="border-b border-error bg-ivory">
           <p className="mx-auto max-w-5xl px-gutter py-3 text-body-s">
-            <strong className="text-error">Changes here are temporary.</strong>{" "}
-            Prices, availability and delivery rules are held in the server&rsquo;s
-            memory and go back to the built-in values whenever it restarts. They
-            will stick once the database is connected.
+            <strong className="text-error">Nothing here is saved yet.</strong>{" "}
+            Prices, availability, delivery rules{" "}
+            <strong>and orders</strong> are held in the server&rsquo;s memory and
+            are lost whenever it restarts. Do not take a real order until the
+            database is connected.
           </p>
         </div>
       )}
