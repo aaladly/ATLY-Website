@@ -22,6 +22,9 @@ import {
   PHOTO_ASPECT,
   FALLBACK_WIDTH,
   PRODUCT_PHOTOS,
+  SOURCE_EXTENSIONS,
+  sourceCandidates,
+  sourceLabel,
   photoHeight,
   photoUrl,
   photoSrcSet,
@@ -77,7 +80,7 @@ describe("the manifest itself", () => {
     for (const key of PHOTO_KEYS) {
       const photo = PHOTOS[key];
       assert.ok(photo.alt.length > 20, `${key} has no real alt text`);
-      assert.ok(!photo.alt.includes(".png"), `${key} alt text is a file name`);
+      assert.ok(!photo.alt.includes(photo.sourceBase), `${key} alt text is a file name`);
     }
   });
 
@@ -91,6 +94,39 @@ describe("the manifest itself", () => {
   test("a JPEG fallback format exists", () => {
     // AVIF and WebP are both optional in a browser. JPEG is not.
     assert.ok(PHOTO_FORMATS.some((f) => f.ext === "jpg"));
+  });
+});
+
+describe("source files", () => {
+  test("a base name resolves to every accepted container", () => {
+    const candidates = sourceCandidates("logo-atly");
+    assert.equal(candidates.length, SOURCE_EXTENSIONS.length);
+    assert.ok(candidates.includes("logo-atly.png"));
+    assert.ok(candidates.includes("logo-atly.jpg"));
+    assert.ok(candidates.includes("logo-atly.jpeg"));
+  });
+
+  test("lossless containers are preferred over lossy ones", () => {
+    // Order is preference order: the script takes the first one it finds. It
+    // matters for the logo, whose background key reads JPEG ringing around
+    // the ink as semi-transparent pixels and refuses the cutout.
+    const order = SOURCE_EXTENSIONS as readonly string[];
+    assert.ok(order.indexOf("png") < order.indexOf("jpg"));
+    assert.ok(order.indexOf("tif") < order.indexOf("jpg"));
+  });
+
+  test("no slot declares an extension in its base name", () => {
+    // It would be looked for as "x.png.png".
+    for (const key of PHOTO_KEYS) {
+      assert.ok(
+        !/.(png|jpe?g|webp|tiff?|avif)$/i.test(PHOTOS[key].sourceBase),
+        key + " has an extension in its base name",
+      );
+    }
+  });
+
+  test("the human label does not pick a format for the owner", () => {
+    assert.equal(sourceLabel("logo-atly"), "logo-atly.png (or .jpg)");
   });
 });
 

@@ -1,5 +1,6 @@
 import {
   PHOTOS,
+  sourceLabel,
   PHOTO_FORMATS,
   PHOTO_WIDTHS,
   FALLBACK_WIDTH,
@@ -65,7 +66,7 @@ export function Photo({
           <p className="mt-3 text-body-s text-cocoa">{photo.note}</p>
           <p className="mt-3 text-body-s text-cocoa">
             <code>
-              {photo.source} &rarr; npm run build:images
+              {sourceLabel(photo.sourceBase)} &rarr; npm run build:images
             </code>
           </p>
         </div>

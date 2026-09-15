@@ -12,16 +12,37 @@ pending" placeholder to the real photograph on its own.
 They are matched exactly, and they are declared in `src/lib/images.ts`. Rename
 the uploads to these:
 
-| File name                    | What it is                                        |
-| ---------------------------- | ------------------------------------------------- |
-| `collection-assortment.png`  | The full lineup — roses, domes, several box sizes |
-| `bar-milk-chocolate.png`     | One wrapped bar, 15 segments, gold shimmer        |
-| `bonbons-6-piece.png`        | Six domes in a square clear box                   |
-| `bonbons-rose-3-piece.png`   | Three roses in a rectangular clear box            |
-| `logo-atly.png`              | The circular logo                                 |
+The **base name** is matched. The extension is not — `.png`, `.jpg`, `.jpeg`,
+`.webp`, `.tif` and `.avif` are all accepted, because a browser save turns a
+PNG into a JPEG without asking and everything here is re-encoded anyway.
+
+| Base name               | What it is                                        |
+| ----------------------- | ------------------------------------------------- |
+| `collection-assortment` | The full lineup — roses, domes, several box sizes |
+| `bar-milk-chocolate`    | One wrapped bar, 15 segments, gold shimmer        |
+| `bonbons-6-piece`       | Six domes in a square clear box                   |
+| `bonbons-rose-3-piece`  | Three roses in a rectangular clear box            |
+| `logo-atly`             | The circular logo                                 |
 
 Product shots are 4:5 portrait. Anything else is centre-cropped rather than
 squashed, and the script says so when it does it.
+
+## The logo is the one that wants a PNG
+
+Not a rule, but measured. The script cuts the cream ground out from behind the
+mark by how far each pixel sits from the background colour. JPEG puts ringing
+around every hard edge, and around dark ink on a flat ground that ringing is
+pixels part-way back toward cream — which the key reads as "partly
+transparent".
+
+The same artwork, both ways:
+
+| Original | Translucent ink | Cutout shipped? |
+| --- | --- | --- |
+| PNG  | 2.2%  | yes |
+| JPEG | 37.8% | no — falls back to the cream tile |
+
+The product photographs do not care. Only the logo does.
 
 ## Then
 

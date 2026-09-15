@@ -37,6 +37,8 @@ import {
   FALLBACK_WIDTH,
   LOGO,
   photoHeight,
+  sourceCandidates,
+  sourceLabel,
 } from "../src/lib/images.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -70,6 +72,22 @@ const exists = async (file: string) => {
   }
 };
 
+/**
+ * Find an original by base name, whatever container it arrived in.
+ *
+ * A browser save turns a PNG into a JPEG without asking, and every one of
+ * these is decoded and re-encoded anyway — so refusing to start over a file
+ * extension would be the build being fussy about something that does not
+ * affect a single byte of what ships.
+ */
+const findSource = async (base: string): Promise<string | null> => {
+  for (const name of sourceCandidates(base)) {
+    const file = path.join(SOURCE, name);
+    if (await exists(file)) return file;
+  }
+  return null;
+};
+
 // ---------------------------------------------------------------------------
 // Product photographs
 // ---------------------------------------------------------------------------
@@ -84,10 +102,13 @@ const exists = async (file: string) => {
  */
 async function buildPhoto(key: string): Promise<boolean> {
   const slot = PHOTOS[key as keyof typeof PHOTOS];
-  const file = path.join(SOURCE, slot.source);
+  const file = await findSource(slot.sourceBase);
 
-  if (!(await exists(file))) {
-    problems.push("missing source: " + path.relative(ROOT, file));
+  if (file === null) {
+    problems.push(
+      "missing source: " +
+        path.join(path.relative(ROOT, SOURCE), sourceLabel(slot.sourceBase)),
+    );
     return false;
   }
 
@@ -97,7 +118,7 @@ async function buildPhoto(key: string): Promise<boolean> {
   const actual = (meta.width ?? 1) / (meta.height ?? 1);
   if (Math.abs(actual - wanted) > 0.01) {
     notes.push(
-      slot.source +
+      path.basename(file) +
         " is " +
         meta.width +
         "x" +
@@ -285,9 +306,12 @@ const FIDELITY_FLOOR = 0.99;
 const TRANSLUCENCY_CEILING = 0.35;
 
 async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
-  const file = path.join(SOURCE, LOGO.source);
-  if (!(await exists(file))) {
-    problems.push("missing source: " + path.relative(ROOT, file));
+  const file = await findSource(LOGO.sourceBase);
+  if (file === null) {
+    problems.push(
+      "missing source: " +
+        path.join(path.relative(ROOT, SOURCE), sourceLabel(LOGO.sourceBase)),
+    );
     return { present: false, cutout: false };
   }
 
@@ -351,9 +375,24 @@ async function buildLogo(): Promise<{ present: boolean; cutout: boolean }> {
     notes.push(
       "the logo's background could not be keyed out cleanly, so the cream " +
         "version is what the site will use. A haloed cutout on a dark surface " +
-        "is worse than a cream tile — this one needs a designer with the " +
-        "original artwork.",
+        "is worse than a cream tile.",
     );
+    /*
+      Nearly always the actual cause, and worth naming rather than sending
+      somebody off to a designer over a file format. JPEG puts ringing around
+      every hard edge, and around dark ink on a flat ground that ringing is
+      pixels part-way back toward the background — which is exactly what the
+      key reads as "partly transparent". The same artwork as a PNG keys
+      cleanly; measured, not guessed.
+    */
+    if (/.jpe?g$/i.test(file)) {
+      notes.push(
+        "the logo original is a JPEG. Its compression artifacts are most " +
+          "likely what failed the key — the same artwork as a PNG normally " +
+          "keys cleanly. Worth re-exporting logo-atly.png before concluding " +
+          "the artwork is the problem.",
+      );
+    }
   }
 
   // --- Favicons ---

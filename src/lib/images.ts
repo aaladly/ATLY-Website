@@ -62,13 +62,44 @@ export const PHOTO_BUDGET_BYTES = 150 * 1024;
 export const PRODUCTS_DIR = "/images/products";
 export const SOURCE_DIR = "assets/source";
 
+/**
+ * Container formats accepted for an original, best first.
+ *
+ * Everything here is decoded and re-encoded, so the only thing the choice
+ * costs is how much detail survived before it reached us. A PNG or a TIFF is
+ * lossless and preferable; a JPEG off a phone or a browser save is fine.
+ */
+export const SOURCE_EXTENSIONS = [
+  "png",
+  "tif",
+  "tiff",
+  "webp",
+  "jpg",
+  "jpeg",
+  "avif",
+] as const;
+
+/** Every file name the build script will look for, in preference order. */
+export const sourceCandidates = (base: string): string[] =>
+  SOURCE_EXTENSIONS.map((ext) => base + "." + ext);
+
+/** How to describe a wanted file to a human, without picking a format for them. */
+export const sourceLabel = (base: string): string => base + ".png (or .jpg)";
+
 // ---------------------------------------------------------------------------
 // The photographs
 // ---------------------------------------------------------------------------
 
 export type PhotoSlot = {
-  /** File name in assets/source/. */
-  source: string;
+  /**
+   * File name in assets/source/, WITHOUT an extension.
+   *
+   * Which container the original arrives in is not something worth failing a
+   * build over — a browser save turns a PNG into a JPEG without asking, and
+   * the pipeline re-encodes everything anyway. The extension is resolved at
+   * build time against SOURCE_EXTENSIONS.
+   */
+  sourceBase: string;
   /** Output basename: `${base}-800.webp` and so on. */
   base: string;
   /**
@@ -86,25 +117,25 @@ export type PhotoSlot = {
 
 export const PHOTOS = {
   collectionAssortment: {
-    source: "collection-assortment.png",
+    sourceBase: "collection-assortment",
     base: "collection-assortment",
     alt: "An assortment of ATLY bon-bons in clear boxes, including rose-shaped and dome-shaped milk chocolates",
     note: "The full lineup — the establishing shot for the home page",
   },
   barMilkChocolate: {
-    source: "bar-milk-chocolate.png",
+    sourceBase: "bar-milk-chocolate",
     base: "bar-milk-chocolate",
     alt: "ATLY milk chocolate bar in a clear sleeve, scored into fifteen segments with a gold shimmer finish",
     note: "A single wrapped bar",
   },
   bonbons6Piece: {
-    source: "bonbons-6-piece.png",
+    sourceBase: "bonbons-6-piece",
     base: "bonbons-6-piece",
     alt: "Six dome-shaped ATLY milk chocolate bon-bons with a gold shimmer finish, in a clear six-piece box",
     note: "A six-piece bon-bon box",
   },
   bonbonsRose3Piece: {
-    source: "bonbons-rose-3-piece.png",
+    sourceBase: "bonbons-rose-3-piece",
     base: "bonbons-rose-3-piece",
     alt: "Three rose-shaped ATLY milk chocolate bon-bons in a clear three-piece box",
     note: "A three-piece rose bon-bon box",
@@ -171,7 +202,7 @@ export const photoSrcSet = (base: string, ext: string): string =>
  * do well — a haloed logo on a dark footer is worse than a cream tile.
  */
 export const LOGO = {
-  source: "logo-atly.png",
+  sourceBase: "logo-atly",
   /** Header lockup, cream ground intact. */
   base: "atly-logo",
   /** Header lockup with the ground keyed out, when the key is clean. */

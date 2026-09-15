@@ -31,7 +31,9 @@ const {
   variantsMissingIngredients,
 } = await import("../src/lib/catalog.ts");
 const { DELIVERY_CONFIG } = await import("../src/config/delivery.ts");
-const { missingPhotos, logoPresent, PHOTOS } = await import("../src/lib/images.ts");
+const { missingPhotos, logoPresent, PHOTOS, sourceLabel } = await import(
+  "../src/lib/images.ts"
+);
 
 const env = (name) => {
   const value = process.env[name];
@@ -202,14 +204,15 @@ require_(
   `${missing.length} photograph${missing.length === 1 ? "" : "s"} missing`,
   "This is a photography-led site and each missing slot renders a " +
     '"Photograph pending" placeholder: ' +
-    missing.map((key) => PHOTOS[key].source).join(", ") +
+    missing.map((key) => sourceLabel(PHOTOS[key].sourceBase)).join(", ") +
     ". Put the originals in assets/source/ and run: npm run build:images",
 );
 
 prefer(
   logoPresent(),
   "No logo artwork",
-  "assets/source/logo-atly.png is missing, so the favicon, the apple touch " +
+  "assets/source/logo-atly.png (or .jpg) is missing, so the favicon, the " +
+    "apple touch " +
     "icon and the link-preview card are still generated from type rather than " +
     "from the real mark. npm run build:images produces all of them.",
 );

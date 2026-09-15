@@ -7,7 +7,8 @@
  * pipeline first.
  */
 
-export const GENERATED_PHOTOS: readonly string[] = [];
+export const GENERATED_PHOTOS: readonly string[] = [
+];
 
 export const GENERATED_LOGO = {
   present: false,
