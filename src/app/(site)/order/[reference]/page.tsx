@@ -5,6 +5,17 @@ import { orderStore } from "@/lib/orders/store";
 import { normalizeReference } from "@/lib/orderReference";
 import { formatCents } from "@/lib/pricing";
 import { BRAND } from "@/lib/catalog";
+import { isPaymentConfigured } from "@/lib/payments";
+
+/**
+ * Whether the shop can take a card at all.
+ *
+ * Decides which of the two "not paid" explanations a customer gets: the card
+ * was declined, or the shop has not switched payment on. Telling somebody
+ * whose card bounced that the shop is not ready leaves them with nothing they
+ * can do about it.
+ */
+const PAYMENT_LIVE = isPaymentConfigured();
 
 export const metadata: Metadata = {
   title: "Your order",
@@ -20,24 +31,72 @@ export default async function OrderPage({ params }: PageProps<"/order/[reference
   const order = await orderStore.get(normalized);
   if (!order) notFound();
 
+  /*
+    An unpaid order is not a confirmed one.
+
+    This page used to say "Order confirmed / Thank you" for every order it
+    could find, which was true enough when payment did not exist and every
+    order was arranged by hand. Now that a card can be declined, an order
+    sitting in awaiting_payment would be telling the customer their chocolate
+    is on the way when nobody has taken any money — and the red panel further
+    down contradicting it does not undo the headline.
+  */
+  const paid = order.status !== "awaiting_payment";
+
   return (
     <main className="mx-auto max-w-3xl px-gutter py-section">
-      <p className="label-caps">Order confirmed</p>
-      <h1 className="mt-3 text-display-xl">Thank you</h1>
+      <p className="label-caps">{paid ? "Order confirmed" : "Payment not completed"}</p>
+      <h1 className="mt-3 text-display-xl">
+        {paid ? "Thank you" : "Almost there"}
+      </h1>
       <p className="mt-6 text-body-l text-cocoa">
-        We have your order, {order.contact.name.split(" ")[0]}. Your reference is
-        below — quote it if you need to reach us about this order.
+        {paid ? (
+          <>
+            We have your order, {order.contact.name.split(" ")[0]}. Your
+            reference is below — quote it if you need to reach us about this
+            order.
+          </>
+        ) : (
+          <>
+            We have saved your order, {order.contact.name.split(" ")[0]}, but it
+            has not been paid for yet. Nothing has been charged.
+          </>
+        )}
       </p>
 
       <p className="mt-8 border border-rule-strong bg-ivory px-6 py-5 text-center font-display text-display-m tracking-[0.1em]">
         {order.reference}
       </p>
 
-      {order.status === "awaiting_payment" && (
-        <p className="mt-6 border-2 border-error bg-ivory p-5 text-body-m text-error">
-          This order has not been paid for. Online payment is not switched on
-          yet — we will be in touch to arrange it.
-        </p>
+      {/*
+        Two reasons an order sits here, and they need different things said.
+        The copy used to cover only the second, from before payment existed —
+        a customer whose card was declined was told the shop had not switched
+        payment on, which is both wrong and unfixable from their side.
+      */}
+      {!paid && (
+        <div className="mt-6 border-2 border-error bg-ivory p-5">
+          {PAYMENT_LIVE ? (
+            <>
+              <p className="text-body-m text-error">
+                We could not take the payment for this order, so nothing has
+                been charged.
+              </p>
+              <p className="mt-3 text-body-m">
+                Your basket is still as you left it —{" "}
+                <Link href="/checkout" className="text-cocoa-deep">
+                  try again
+                </Link>
+                , or message us and we will sort it out by hand.
+              </p>
+            </>
+          ) : (
+            <p className="text-body-m text-error">
+              This order has not been paid for. Online payment is not switched
+              on yet — we will be in touch to arrange it.
+            </p>
+          )}
+        </div>
       )}
 
       <section className="mt-section">
