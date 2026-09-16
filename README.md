@@ -252,6 +252,56 @@ anything holding it can read every order and address in the business.
 from a client component a build error rather than a leak. Never rename it to
 anything starting `NEXT_PUBLIC_`.
 
+## Payment
+
+Stripe PaymentIntents with the Payment Element. Not hosted Checkout: the
+delivery rules, bundle pricing and New Jersey validation all live in this
+codebase, and hosted Checkout would need them duplicated in Stripe.
+
+```
+src/lib/payments.ts                    keys, client, the gate
+src/app/(site)/checkout/actions.ts     validate -> save -> create the intent
+src/app/api/stripe/webhook/route.ts    the only thing that marks an order paid
+src/lib/orders/payment.ts              what a success event should do (pure)
+src/components/CheckoutPayment.tsx     the card step
+```
+
+With no keys set, checkout validates an order completely and then declines it.
+That is the shipped state today and it is deliberate.
+
+### The flow
+
+1. The customer fills in the form. Totals come from `quoteOrder`, which calls
+   the same `validateCheckout` that will authorise the charge.
+2. **Continue to payment** runs `placeOrder`: validate, save the order as
+   `awaiting_payment`, create a PaymentIntent for the recomputed total with
+   the order reference in its metadata.
+3. The card step mounts the Payment Element against that intent's client
+   secret and confirms it.
+4. `payment_intent.succeeded` arrives at the webhook, which moves the order to
+   `new` and (once Resend is configured) sends the confirmation.
+
+The order is written **before** the charge because the webhook arrives with
+nothing but an intent id and its metadata, and an order does not fit in
+metadata. The cost is a row per abandoned checkout, which is what the
+`awaiting_payment` status is for.
+
+### Why the browser never marks an order paid
+
+A customer whose phone dies between confirming and the redirect has still been
+charged. Only the webhook records payment, so the order is right either way.
+
+### Testing locally
+
+```
+stripe listen --forward-to localhost:3100/api/stripe/webhook
+```
+
+That prints a `whsec_...` — put it in `.env.local`. It is NOT the same value
+as the signing secret of a dashboard endpoint. Card `4242 4242 4242 4242`
+succeeds, `4000 0000 0000 0002` is declined, `4000 0027 6000 3184` forces
+3-D Secure.
+
 ## Photography
 
 Originals go in `assets/source/` and are never served. `npm run build:images`

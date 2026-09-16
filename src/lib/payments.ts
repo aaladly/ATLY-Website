@@ -1,45 +1,108 @@
 import "server-only";
 
+import Stripe from "stripe";
+
 /**
- * Stripe configuration gate.
+ * Stripe.
  *
- * Payment is not wired. This module exists so that fact is expressed in one
- * place and enforced, rather than being a comment somebody forgets.
+ * TO ENABLE PAYMENT, put the keys in .env.local — never in a committed file:
  *
- * TO ENABLE PAYMENT:
- *   1. Put the keys in .env.local — never in a file that is committed:
- *        STRIPE_SECRET_KEY=sk_...
- *        STRIPE_WEBHOOK_SECRET=whsec_...
- *        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_...
- *   2. Install the SDK.
- *   3. Create and confirm a PaymentIntent inside placeOrder, before the order
- *      is persisted with status "new".
+ *   STRIPE_SECRET_KEY=sk_test_...              charges; server only
+ *   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...   mounts the card field
+ *   STRIPE_WEBHOOK_SECRET=whsec_...            verifies the webhook
  *
- * Until step 1 is done, placeOrder refuses. That is deliberate: a checkout that
- * records orders nobody paid for is worse than one that declines politely, and
- * a missing charge step is an easy thing to ship without noticing.
+ * With none of them set, the site behaves exactly as it did before payment
+ * existed: checkout validates an order completely and then declines it. That
+ * is deliberate. A checkout that records orders nobody paid for is worse than
+ * one that politely refuses, and a missing charge step is an easy thing to
+ * ship without noticing.
+ *
+ * WHAT IS NOT HERE ----------------------------------------------------------
+ * Nothing in this file decides an amount. Every figure a customer is charged
+ * comes from validateCheckout(), which recomputes the cart, the bundle
+ * pricing, the delivery fee and the tax from the item IDs and the address.
+ * CheckoutRequest carries no prices at all, so "never trust the client" is a
+ * property of the shape rather than a check somebody has to remember to write.
+ * ---------------------------------------------------------------------------
  */
 
 /**
- * Whether live payment can be taken.
+ * Whether a charge can be attempted.
  *
- * Only checks that the secret exists. It does NOT check that the key is valid,
- * that it is the right mode, or that the account can accept charges — only
- * Stripe can tell us that, at the point of charging.
+ * Only checks that the secret exists. It does NOT check that the key is
+ * valid, that it is the right mode, or that the account can accept charges —
+ * only Stripe can say that, at the point of charging.
  */
 export function isPaymentConfigured(): boolean {
   const key = process.env.STRIPE_SECRET_KEY;
   return typeof key === "string" && key.trim().length > 0;
 }
 
+/** Whether inbound webhooks can be verified. Separate key, separate failure. */
+export function isWebhookConfigured(): boolean {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  return typeof secret === "string" && secret.trim().length > 0;
+}
+
 /**
  * The publishable key for the browser, or null.
  *
- * Publishable keys are safe to expose — that is their purpose. The secret key
- * must never be read from a client component, which is why this module is
+ * Publishable keys are meant to be public — that is their purpose. The secret
+ * key must never reach a client component, which is why this module is
  * server-only and hands out just this one value.
  */
 export function publishableKey(): string | null {
   const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   return typeof key === "string" && key.trim().length > 0 ? key : null;
 }
+
+let client: Stripe | null = null;
+
+/**
+ * The Stripe client, or null when no secret is configured.
+ *
+ * Null rather than throwing on import: "payment is not switched on" is a
+ * supported state of this codebase, and a module that threw would take down
+ * every page rather than the one action that needs it.
+ *
+ * The API version is pinned. Left unpinned, Stripe's default moves when the
+ * library is updated and the shape of a webhook event can change underneath a
+ * handler that was working yesterday.
+ */
+export function stripe(): Stripe | null {
+  if (!isPaymentConfigured()) return null;
+  client ??= new Stripe(process.env.STRIPE_SECRET_KEY!.trim(), {
+    apiVersion: "2026-08-26.dahlia",
+    // Shows up in the Stripe dashboard's logs, which is worth having when
+    // working out which deployment made a charge.
+    appInfo: { name: "ATLY Belgian Chocolate" },
+  });
+  return client;
+}
+
+export function requireStripe(): Stripe {
+  const s = stripe();
+  if (s === null) {
+    throw new Error("Stripe is not configured: set STRIPE_SECRET_KEY in .env.local.");
+  }
+  return s;
+}
+
+export function webhookSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (typeof secret !== "string" || secret.trim() === "") {
+    throw new Error(
+      "Stripe webhooks are not configured: set STRIPE_WEBHOOK_SECRET in .env.local.",
+    );
+  }
+  return secret.trim();
+}
+
+/**
+ * The metadata key carrying our order reference on a PaymentIntent.
+ *
+ * This is the only link between a Stripe charge and an ATLY order. The
+ * webhook has nothing else to go on, so if this string changes, every
+ * in-flight payment becomes a charge nobody can match to an order.
+ */
+export const ORDER_REFERENCE_KEY = "atly_order_reference";

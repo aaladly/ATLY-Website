@@ -8,6 +8,7 @@ import { placeOrder, quoteOrder } from "@/app/(site)/checkout/actions";
 import type { CheckoutRequest, ValidationIssue } from "@/lib/checkout";
 import { formatCents } from "@/lib/pricing";
 import { BRAND } from "@/lib/catalog";
+import { CARD_PAYMENT_AVAILABLE, CheckoutPayment } from "./CheckoutPayment";
 
 type Totals = {
   subtotalCents: number;
@@ -165,12 +166,40 @@ export function CheckoutForm() {
     issues.find((i) => i.field === path)?.message ??
     quoteIssues.find((i) => i.field === path)?.message;
 
+  /**
+   * Set once the order is recorded and Stripe has an intent for it.
+   *
+   * Its presence is what swaps the page to the card step, so it is also what
+   * stops a second press creating a second order: once this is non-null the
+   * form is gone.
+   */
+  const [payment, setPayment] = useState<{
+    clientSecret: string;
+    reference: string;
+    totalCents: number;
+  } | null>(null);
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (payment) return;
     setIssues([]);
     startTransition(async () => {
       const result = await placeOrder(request);
       if (result.ok) {
+        /*
+          Two outcomes, and which one happens is not this component decision
+          to make: with Stripe configured the order is awaiting_payment and
+          there is a card step to go to, and without it placeOrder never
+          returns ok at all. The clientSecret check is belt and braces.
+        */
+        if (CARD_PAYMENT_AVAILABLE && result.clientSecret) {
+          setPayment({
+            clientSecret: result.clientSecret,
+            reference: result.reference,
+            totalCents: result.totalCents,
+          });
+          return;
+        }
         router.push(`/order/${result.reference}`);
       } else {
         setIssues(result.issues);
@@ -194,6 +223,41 @@ export function CheckoutForm() {
       <p className="label-caps" aria-busy="true">
         Loading your order…
       </p>
+    );
+  }
+
+  /*
+    The card step replaces the form rather than sitting under it. The order is
+    already recorded and Stripe already has an intent for this exact amount;
+    leaving the address fields editable would invite somebody to change the
+    delivery ZIP after the total behind the charge was fixed, and pay the old
+    figure for the new address.
+  */
+  if (payment) {
+    return (
+      <div>
+        <h1 className="text-display-l">Payment</h1>
+        <p className="mt-4 text-body-m text-cocoa">
+          Order {payment.reference}. Nothing has been charged yet.
+        </p>
+
+        <div className="mt-8 border-t border-rule-strong pt-8">
+          <CheckoutPayment
+            clientSecret={payment.clientSecret}
+            reference={payment.reference}
+            totalCents={payment.totalCents}
+            onPaid={(reference) => router.push(`/order/${reference}`)}
+          />
+        </div>
+
+        <p className="mt-8 text-body-s text-cocoa">
+          Need to change something? Your order is saved as {payment.reference} —{" "}
+          <Link href="/cart" className="text-cocoa-deep">
+            go back to your cart
+          </Link>{" "}
+          and we will not charge this one.
+        </p>
+      </div>
     );
   }
 
@@ -401,7 +465,11 @@ export function CheckoutForm() {
         disabled={pending}
         className="mt-8 inline-flex w-full items-center justify-center bg-cocoa-deep px-8 py-4 text-label uppercase text-cream transition-colors duration-200 hover:bg-cocoa disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {pending ? "Placing your order…" : "Place order"}
+        {pending
+          ? "Setting up payment…"
+          : CARD_PAYMENT_AVAILABLE
+            ? "Continue to payment"
+            : "Place order"}
       </button>
 
       {/* Belt and braces with the checkbox above: the tick is the record that

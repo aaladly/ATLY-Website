@@ -77,11 +77,27 @@ require_(
     "and then refuses it, so nothing can be sold.",
 );
 
+// Promoted from a warning once the webhook was actually built. It used to be
+// advisory because nothing consumed it; now it is the only thing that marks an
+// order paid. Without it /api/stripe/webhook refuses every event, and a
+// customer who has genuinely been charged leaves an order sitting in
+// awaiting_payment that nobody in the kitchen will ever look at.
+require_(
+  !env("STRIPE_SECRET_KEY") || env("STRIPE_WEBHOOK_SECRET"),
+  "Stripe can charge, but nothing marks the order paid",
+  "STRIPE_SECRET_KEY is set and STRIPE_WEBHOOK_SECRET is not. The webhook at " +
+    "/api/stripe/webhook verifies every event against that secret and refuses " +
+    "without it, so payments would succeed and orders would stay in " +
+    "awaiting_payment forever. Add the signing secret from the Stripe " +
+    "dashboard, or from `stripe listen` when testing locally.",
+);
+
 prefer(
   env("STRIPE_WEBHOOK_SECRET"),
   "No Stripe webhook secret",
-  "Needed to confirm payments asynchronously. Without it an order can sit in " +
-    "awaiting_payment after the customer has actually paid.",
+  "Not blocking while there is no secret key either — payment is off, so " +
+    "there is nothing to confirm. It becomes a blocker the moment Stripe can " +
+    "take a charge.",
 );
 
 require_(
