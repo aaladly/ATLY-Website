@@ -106,3 +106,31 @@ export function webhookSecret(): string {
  * in-flight payment becomes a charge nobody can match to an order.
  */
 export const ORDER_REFERENCE_KEY = "atly_order_reference";
+
+/**
+ * Which payment methods checkout offers, as a Stripe configuration id.
+ *
+ * WHY THIS EXISTS, because it is not obvious: a Stripe account ships with a
+ * default configuration that has Klarna, Link, Amazon Pay, Cash App and
+ * Affirm switched ON, and the Payment Element displays THAT rather than the
+ * payment_method_types on the intent. Restricting the intent alone produced a
+ * checkout offering Klarna and a bank tab that could not actually have been
+ * charged — the display and the capability disagreed.
+ *
+ * So a configuration of our own, with card, Apple Pay and Google Pay on and
+ * everything else off. Owner decision, and a sound one for this shop: Klarna
+ * is buy-now-pay-later on a ten dollar box of chocolates, and bank debit can
+ * fail days AFTER it looks successful, on perishable goods already
+ * hand-delivered.
+ *
+ * Not secret — an id, not a key — so it is NEXT_PUBLIC and the browser reads
+ * the same value, which is what keeps the deferred Elements instance and the
+ * intent in agreement.
+ *
+ * Null falls back to the account default, i.e. everything. If this ever reads
+ * null in production, checkout quietly starts offering Klarna again.
+ */
+export function paymentMethodConfiguration(): string | null {
+  const id = process.env.NEXT_PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION;
+  return typeof id === "string" && id.trim() !== "" ? id.trim() : null;
+}

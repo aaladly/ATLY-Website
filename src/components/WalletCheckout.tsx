@@ -45,6 +45,13 @@ const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
 
 export const WALLETS_POSSIBLE = stripePromise !== null;
 
+/**
+ * Card, Apple Pay and Google Pay only — see lib/payments.ts for why this is a
+ * configuration rather than a list of payment method types.
+ */
+const PAYMENT_METHOD_CONFIGURATION =
+  process.env.NEXT_PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION?.trim() || null;
+
 type CartLine = { variantId: string; quantity: number };
 
 export function WalletCheckout({
@@ -78,15 +85,13 @@ export function WalletCheckout({
         amount,
         currency: "usd",
         /*
-          Deliberately NOT pinning paymentMethodTypes here.
-
-          placeOrder creates the PaymentIntent with automatic_payment_methods
-          enabled, and confirmPayment refuses when the Elements instance was
-          built with a payment method list that does not match the intent it
-          is confirming. Leaving both on automatic keeps the two ends in
-          agreement — and which wallets appear is decided by the device, not
-          by this list.
+          The same configuration the PaymentIntent is created against, so this
+          deferred Elements instance and the intent agree about which methods
+          exist — confirmPayment refuses when they do not.
         */
+        ...(PAYMENT_METHOD_CONFIGURATION
+          ? { paymentMethodConfiguration: PAYMENT_METHOD_CONFIGURATION }
+          : {}),
         appearance: { theme: "flat", variables: { borderRadius: "2px" } },
       }}
     >

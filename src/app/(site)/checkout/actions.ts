@@ -7,6 +7,7 @@ import { orderStore } from "@/lib/orders/store";
 import {
   ORDER_REFERENCE_KEY,
   isPaymentConfigured,
+  paymentMethodConfiguration,
   requireStripe,
 } from "@/lib/payments";
 
@@ -90,7 +91,21 @@ export async function placeOrder(request: CheckoutRequest): Promise<PlaceOrderRe
         // browser sent contributed a figure to it.
         amount: order.totalCents,
         currency: "usd",
+        /*
+          Card, Apple Pay and Google Pay. Nothing else.
+
+          NOT payment_method_types: ["card"], which was the obvious thing to
+          reach for and does not work. That restricts what can be CHARGED but
+          the Payment Element keeps displaying whatever the account default
+          configuration has switched on — so checkout offered Klarna and a
+          bank tab that would have failed on confirm. Display and capability
+          have to come from the same place, and that place is the
+          configuration below.
+        */
         automatic_payment_methods: { enabled: true },
+        ...(paymentMethodConfiguration()
+          ? { payment_method_configuration: paymentMethodConfiguration()! }
+          : {}),
         // The only thread between a Stripe charge and an ATLY order.
         metadata: { [ORDER_REFERENCE_KEY]: order.reference },
         description: `ATLY order ${order.reference}`,
