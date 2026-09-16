@@ -181,3 +181,69 @@ export async function quoteOrder(request: CheckoutRequest) {
     },
   };
 }
+
+/**
+ * Quote for a wallet sheet, from the redacted address it gives us.
+ *
+ * Apple Pay and Google Pay hand over only country, state, city and postal code
+ * while the sheet is open — the street line is withheld until the customer
+ * authorises. That is a deliberate privacy property of the wallets and not
+ * something to work around: it is also everything the delivery engine needs,
+ * since the fee turns on the ZIP and the state.
+ *
+ * So the street line is a placeholder here, exactly as it is in quoteOrder.
+ * The real one arrives with the confirmation and is validated then, by the
+ * same function, before any money moves.
+ */
+export async function quoteForWallet(input: {
+  items: { variantId: string; quantity: number }[];
+  state: string;
+  zip: string;
+  city: string;
+}) {
+  const result = validateCheckout(
+    {
+      contact: { name: "wallet", email: "wallet@example.com", phone: "0" },
+      address: {
+        line1: "wallet",
+        line2: "",
+        city: input.city || "wallet",
+        state: input.state,
+        zip: input.zip,
+      },
+      items: input.items,
+      giftNote: "",
+      // A quote is not an order. The acceptance that matters is enforced on
+      // the way to a charge, in placeOrder.
+      acceptedTerms: true,
+    },
+    await checkoutDeps(() => "QUOTE"),
+  );
+
+  if (!result.ok) {
+    /*
+      The wallet sheet has room for one short line, and it is shown against
+      the address the customer just picked. An address problem is the only
+      thing they can act on from inside that sheet, so anything else is
+      reported as a generic refusal rather than leaking, say, a cart error
+      into a box about a delivery address.
+    */
+    const addressIssue = result.issues.find((issue) =>
+      issue.field.startsWith("address."),
+    );
+    return {
+      ok: false as const,
+      message:
+        addressIssue?.message ??
+        "We cannot deliver to that address. We deliver within New Jersey only.",
+    };
+  }
+
+  const { subtotalCents, deliveryCents, taxCents, totalCents } = result.order;
+  return {
+    ok: true as const,
+    totals: { subtotalCents, deliveryCents, taxCents, totalCents },
+    deliveryStandardCents: result.delivery.standardCostCents,
+    centsToFreeDelivery: result.delivery.centsToFreeDelivery,
+  };
+}

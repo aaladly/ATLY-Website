@@ -9,6 +9,7 @@ import type { CheckoutRequest, ValidationIssue } from "@/lib/checkout";
 import { formatCents } from "@/lib/pricing";
 import { BRAND } from "@/lib/catalog";
 import { CARD_PAYMENT_AVAILABLE, CheckoutPayment } from "./CheckoutPayment";
+import { WALLETS_POSSIBLE, WalletCheckout } from "./WalletCheckout";
 
 type Totals = {
   subtotalCents: number;
@@ -282,6 +283,32 @@ export function CheckoutForm() {
   return (
     <form onSubmit={submit} noValidate>
       <h1 className="text-display-xl">Checkout</h1>
+
+      {/*
+        Wallets first, because on a phone they are the whole checkout: one tap
+        instead of six fields, and the address comes from the wallet already
+        typed. The card form below is the fallback and stays exactly as it was.
+
+        Shown as soon as there is a cart, deliberately NOT waiting for a ZIP.
+        Requiring the ZIP first would mean typing an address into the form in
+        order to be offered the button whose whole purpose is to supply one.
+
+        So the sheet opens on the goods total and the delivery fee lands the
+        moment the customer picks an address inside it, which is the event
+        wallets exist to provide. Nothing can be authorised at that opening
+        figure: the sheet will not let a customer confirm before choosing an
+        address when one is required, and onConfirm refuses outright if it
+        never saw an address change.
+      */}
+      {WALLETS_POSSIBLE && itemCount > 0 && (
+        <div className="mt-10">
+          <WalletCheckout
+            lines={cart.lines}
+            openingTotalCents={totals?.totalCents ?? null}
+            onPaid={(reference) => router.push(`/order/${reference}`)}
+          />
+        </div>
+      )}
 
       {/* Errors that belong to no single field. role=alert so they are
           announced the moment they appear. */}
