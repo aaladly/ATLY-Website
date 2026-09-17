@@ -1,6 +1,6 @@
 # ATLY Belgian Chocolate
 
-Online ordering for ATLY Belgian Chocolate — a family-run handmade chocolate business in
+Online ordering for ATLY Belgian Chocolate, a family run handmade chocolate business in
 New Jersey, currently selling at farmers markets.
 
 **Online ordering is the entire point of this site.** The most common question at market
@@ -14,7 +14,7 @@ Tagline: *Pure chocolate. Real ingredients. A bigger purpose.*
 ## SCOPE LOCK
 
 This repository is self-contained. Every file read, created, or edited lives under this
-root. Several unrelated projects exist elsewhere on this machine and are off-limits — they
+root. Several unrelated projects exist elsewhere on this machine and are off limits. They
 are never opened, read from, or used as a source of patterns. See `CLAUDE.md`.
 
 ---
