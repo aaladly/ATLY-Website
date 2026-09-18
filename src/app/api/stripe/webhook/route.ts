@@ -7,6 +7,7 @@ import {
 } from "@/lib/payments";
 import { orderStore } from "@/lib/orders/store";
 import { decidePaymentSuccess, ORDER_CURRENCY } from "@/lib/orders/payment";
+import { sendOrderEmails } from "@/lib/email";
 
 /**
  * Stripe webhook.
@@ -146,12 +147,30 @@ async function handleSucceeded(intent: Stripe.PaymentIntent): Promise<Response> 
     return ok({ handled: "lost_order" });
   }
 
-  // TODO (blocked on credentials): send the customer confirmation and the
-  // new-order notification through Resend once RESEND_API_KEY is set. It
-  // belongs here rather than in the checkout action, because here is the
-  // first moment anybody has actually paid — and it must stay inside the
-  // mark_paid branch so a duplicate event does not send a second email.
   console.info(`Order ${reference} paid (${intent.id}).`);
 
-  return ok({ handled: "marked_paid", reference });
+  /*
+    The confirmation, and only from inside this branch.
+
+    Here is the first moment anybody has actually paid, which is why it is not
+    in the checkout action. And it is INSIDE the mark_paid branch rather than
+    after the switch, because Stripe delivers the same event more than once:
+    the second delivery returns already_handled above and never reaches this
+    line, so one order produces one email.
+
+    Awaited, so a failure is logged against the reference while the reference
+    is still in hand — but it cannot fail the webhook. The order is already
+    paid and already marked; a non-2xx here would have Stripe redeliver an
+    event whose work is done, and the retry would land on already_handled and
+    not send the email anyway. A missing confirmation is a thing somebody
+    sends by hand from the admin. An unmarked paid order is not.
+  */
+  const email = await sendOrderEmails(updated);
+  if (!email.sent) {
+    console.error(
+      `Order ${reference} is paid and marked, but no confirmation was sent: ${email.reason}`,
+    );
+  }
+
+  return ok({ handled: "marked_paid", reference, emailed: email.sent });
 }
