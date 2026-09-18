@@ -1,0 +1,75 @@
+name: CI
+
+# Every push and every pull request. The point is that a branch cannot be
+# merged on the strength of "it worked on my machine" — which, on a Windows
+# laptop building a site that deploys to Linux, is a real difference.
+on:
+  push:
+  pull_request:
+
+# A second push to the same branch cancels the first. Nobody needs the results
+# of a commit that has already been replaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Generous, but a hung font fetch should not burn minutes for half an hour.
+    timeout-minutes: 15
+
+    permissions:
+      # Read the code, and nothing else. This workflow publishes nothing and
+      # needs no token beyond checkout.
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # The tests are .mts files run by node --test with native TypeScript
+          # stripping, which needs a recent Node. 24 is what this is developed
+          # against.
+          node-version: 24
+          cache: npm
+
+      # ci, not install: it installs exactly what package-lock.json pins and
+      # fails if the lockfile and package.json disagree, which is the whole
+      # reason the lockfile is committed.
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test
+
+      # Needs network for Google Fonts, which is fine here. Runs last because
+      # it is the slowest and the least likely to be the thing that is broken.
+      #
+      # No Supabase or Stripe credentials are set, and that is deliberate: the
+      # build must not require them. src/instrumentation.ts exempts the build
+      # phase from its "refuse to start without a database" check for exactly
+      # this reason, so if that exemption is ever removed, this step is what
+      # notices.
+      - name: Build
+        run: npm run build
+
+      # Not a gate. check:launch exits non-zero while the owner still owes
+      # ingredient lists, legal details and a site URL, so failing the build on
+      # it would mean a permanently red CI that everyone learns to ignore.
+      # Reported so the list is visible on every run instead.
+      - name: Launch readiness (informational)
+        if: always()
+        continue-on-error: true
+        run: npm run check:launch
+
+      - name: Contrast (informational)
+        if: always()
+        continue-on-error: true
+        run: npm run check:contrast
