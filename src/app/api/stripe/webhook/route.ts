@@ -6,7 +6,7 @@ import {
   webhookSecret,
 } from "@/lib/payments";
 import { orderStore } from "@/lib/orders/store";
-import { decidePaymentSuccess } from "@/lib/orders/payment";
+import { decidePaymentSuccess, ORDER_CURRENCY } from "@/lib/orders/payment";
 
 /**
  * Stripe webhook.
@@ -100,7 +100,32 @@ async function handleSucceeded(intent: Stripe.PaymentIntent): Promise<Response> 
   }
 
   const existing = await orderStore.get(reference);
-  const outcome = decidePaymentSuccess(existing, reference);
+  const outcome = decidePaymentSuccess(existing, reference, {
+    // What Stripe says was actually taken, checked against what we calculated.
+    // The reference in metadata says WHICH order; it says nothing about how
+    // much, and those had been treated as the same claim.
+    amountCents: intent.amount,
+    currency: intent.currency,
+  });
+
+  if (outcome.action === "amount_mismatch") {
+    /*
+      Loud, and with both ids, because this is the one outcome here that
+      somebody has to act on by hand. Either a customer has been charged an
+      amount that is not their order total — a refund — or a forged intent is
+      being pushed at this endpoint, which is a different conversation again.
+
+      Still a 2xx. Stripe would redeliver the identical mismatched figure, so
+      retrying achieves nothing except burying the log line under copies of
+      itself.
+    */
+    console.error(
+      `PAYMENT AMOUNT MISMATCH. Order ${reference}, intent ${intent.id}: ` +
+        `Stripe says ${intent.amount} ${intent.currency}, the order totals ` +
+        `${existing?.totalCents ?? "unknown"} ${ORDER_CURRENCY}. NOT marked paid.`,
+    );
+    return ok({ handled: "amount_mismatch", reference });
+  }
 
   if (outcome.action !== "mark_paid") {
     // Duplicate delivery, a late event, or an order that has moved on. All of
