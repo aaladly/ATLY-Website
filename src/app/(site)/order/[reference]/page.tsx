@@ -8,6 +8,7 @@ import { BRAND } from "@/lib/catalog";
 import { isPaymentConfigured } from "@/lib/payments";
 import { checkRate } from "@/lib/rateLimit";
 import { clientIp } from "@/lib/clientIp";
+import { isEmailConfigured } from "@/lib/email";
 
 /**
  * Whether the shop can take a card at all.
@@ -18,6 +19,9 @@ import { clientIp } from "@/lib/clientIp";
  * can do about it.
  */
 const PAYMENT_LIVE = isPaymentConfigured();
+
+/** Whether a confirmation email can actually be sent. */
+const EMAIL_LIVE = isEmailConfigured();
 
 export const metadata: Metadata = {
   title: "Your order",
@@ -215,9 +219,19 @@ export default async function OrderPage({ params }: PageProps<"/order/[reference
       </section>
 
       <p className="mt-section text-body-s text-cocoa">
-        A confirmation email is on its way.{" "}
-        {/* TODO: true once Resend is configured. Do not remove this note
-            before the email actually sends. */}
+        {/*
+          Only claimed when it is true.
+
+          This used to say "a confirmation email is on its way" to everyone,
+          carrying a TODO not to remove the note before the email actually
+          sent. It sends now — but only when Resend is configured, and only
+          for an order that has actually been paid, because that is the one
+          branch the webhook sends from. So the sentence is shown under
+          exactly those conditions and not otherwise. Telling somebody to
+          watch their inbox for an email nobody will send is worse than
+          saying nothing.
+        */}
+        {paid && EMAIL_LIVE && <>A confirmation email is on its way. </>}
         <Link href="/shop" className="text-cocoa-deep">
           Back to the shop
         </Link>

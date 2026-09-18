@@ -24,9 +24,20 @@ export default function SiteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Development only. TODO: wire to real error reporting at launch — until
-    // something is collecting these, an error nobody saw is an error nobody
-    // fixes.
+    /*
+      Reporting lives in src/instrumentation.ts, not here.
+
+      onRequestError is Next's own hook and it catches every server-side
+      failure with the same digest shown below, which is what ties a customer
+      quoting a code to an actual stack trace. A reporter in this component
+      would only ever see the subset that made it to the browser, and would
+      see it from inside the browser — where an ad blocker, a dead network or
+      a failed hydration can all swallow the report, and where anything sent
+      is sent from the customer's machine.
+
+      So this stays a development console line. It is not a gap: it is the
+      half of the picture that the server half already covers better.
+    */
     if (process.env.NODE_ENV === "development") {
       console.error("Shop render error:", error);
     }
