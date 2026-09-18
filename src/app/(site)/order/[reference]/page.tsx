@@ -6,6 +6,8 @@ import { normalizeReference } from "@/lib/orderReference";
 import { formatCents } from "@/lib/pricing";
 import { BRAND } from "@/lib/catalog";
 import { isPaymentConfigured } from "@/lib/payments";
+import { checkRate } from "@/lib/rateLimit";
+import { clientIp } from "@/lib/clientIp";
 
 /**
  * Whether the shop can take a card at all.
@@ -22,11 +24,59 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/**
+ * How often one address may look up an order.
+ *
+ * WHY THIS PAGE NEEDS A LIMIT ----------------------------------------------
+ * The URL is the only thing protecting it, and the reference behind it is 25
+ * characters to the power of 6 — 244 million, or 27.9 bits. That is a label
+ * chosen to be unambiguous when read down a phone, not a secret, and the
+ * alphabet deliberately drops confusable characters, which is exactly what
+ * costs it entropy.
+ *
+ * Unthrottled, a few hundred thousand requests finds a live order, and what
+ * is behind it is a name, a full delivery address, a phone number and an
+ * email. With this, the same search takes years.
+ *
+ * Generous enough that a real person refreshing, or a household behind one
+ * address checking two orders, never notices.
+ * ---------------------------------------------------------------------------
+ */
+const ORDER_LOOKUP = { limit: 30, windowMs: 10 * 60 * 1000 } as const;
+
 // Next 16: params is async.
 export default async function OrderPage({ params }: PageProps<"/order/[reference]">) {
   const { reference } = await params;
   const normalized = normalizeReference(reference);
   if (!normalized) notFound();
+
+  /*
+    Counted AFTER the shape check and BEFORE the lookup.
+
+    After, so a typo in a reference a customer read off their own confirmation
+    does not spend their allowance. Before, so a scan for valid references
+    never reaches the store.
+  */
+  const lookups = checkRate(
+    "order-lookup",
+    await clientIp(),
+    ORDER_LOOKUP.limit,
+    ORDER_LOOKUP.windowMs,
+  );
+
+  if (!lookups.allowed) {
+    /*
+      notFound(), not a "slow down" page.
+
+      A distinct rate-limit response is itself an oracle: it tells a scanner
+      its requests are being counted, which is the cue to spread them out or
+      rotate address. An attacker learns nothing from this that they did not
+      already have, and a real person hitting it sees the same page as a
+      mistyped reference.
+    */
+    console.warn(`Order lookup rate limited: ${lookups.used} attempts.`);
+    notFound();
+  }
 
   const order = await orderStore.get(normalized);
   if (!order) notFound();

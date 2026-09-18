@@ -8,6 +8,17 @@ import {
   createSessionToken,
   verifySessionToken,
 } from "./session";
+import { checkRate, clearRate, peekRate } from "../rateLimit";
+import { clientIp } from "../clientIp";
+import {
+  GLOBAL_BUCKET,
+  GLOBAL_KEY,
+  IP_BUCKET,
+  MAX_FAILURES_GLOBAL,
+  MAX_FAILURES_PER_IP,
+  WINDOW_MS,
+  progressiveDelayMs,
+} from "./throttle";
 
 /**
  * The admin's front door.
@@ -61,56 +72,46 @@ export function missingAdminConfig(): string[] {
 // ---------------------------------------------------------------------------
 
 /**
- * One password, no username, and a public URL: an online guessing attack is
- * the obvious threat, so failures are counted.
- *
- * Counted globally rather than per IP on purpose. There is only one account,
- * and a per-IP counter is bypassed by rotating IPs, which is the easy part of
- * an attack. The cost is that someone can lock the owner out for a few
- * minutes by failing on purpose — an annoyance, against a real defence.
- *
- * In memory, so it resets on restart, and on Vercel each instance counts
- * separately. scrypt is the other half of the defence and does not reset.
+ * The numbers, and the reasoning behind the three layers, live in throttle.ts
+ * — separated so they can be unit tested without a request context. What is
+ * left here is the part that needs one.
  */
-const MAX_FAILURES = 10;
-const WINDOW_MS = 15 * 60 * 1000;
 
-type Throttle = { failures: number; firstFailureAt: number };
+/**
+ * Milliseconds until login is allowed again, or 0 if it is allowed now.
+ *
+ * Peeks rather than counts, so rendering the login page never spends an
+ * attempt.
+ */
+export function lockoutRemainingMs(ip: string, nowMs: number = Date.now()): number {
+  const perIp = peekRate(IP_BUCKET, ip, nowMs);
+  if (perIp.used >= MAX_FAILURES_PER_IP) return perIp.retryAfterMs;
 
-const globalForThrottle = globalThis as unknown as { __atlyAdminThrottle?: Throttle };
+  const global = peekRate(GLOBAL_BUCKET, GLOBAL_KEY, nowMs);
+  if (global.used >= MAX_FAILURES_GLOBAL) return global.retryAfterMs;
 
-const throttle = (): Throttle => {
-  globalForThrottle.__atlyAdminThrottle ??= { failures: 0, firstFailureAt: 0 };
-  return globalForThrottle.__atlyAdminThrottle;
-};
-
-/** Milliseconds until login is allowed again, or 0 if it is allowed now. */
-export function lockoutRemainingMs(nowMs: number = Date.now()): number {
-  const state = throttle();
-  if (state.failures < MAX_FAILURES) return 0;
-  const remaining = state.firstFailureAt + WINDOW_MS - nowMs;
-  if (remaining <= 0) {
-    state.failures = 0;
-    state.firstFailureAt = 0;
-    return 0;
-  }
-  return remaining;
+  return 0;
 }
 
-function recordFailure(nowMs: number): void {
-  const state = throttle();
-  if (state.failures === 0 || nowMs - state.firstFailureAt > WINDOW_MS) {
-    state.failures = 1;
-    state.firstFailureAt = nowMs;
-    return;
-  }
-  state.failures += 1;
+/** Failures recorded for this address in the current window. */
+const failuresFor = (ip: string, nowMs: number): number =>
+  peekRate(IP_BUCKET, ip, nowMs).used;
+
+function recordFailure(ip: string, nowMs: number): void {
+  checkRate(IP_BUCKET, ip, MAX_FAILURES_PER_IP, WINDOW_MS, nowMs);
+  checkRate(GLOBAL_BUCKET, GLOBAL_KEY, MAX_FAILURES_GLOBAL, WINDOW_MS, nowMs);
 }
 
-function clearFailures(): void {
-  const state = throttle();
-  state.failures = 0;
-  state.firstFailureAt = 0;
+/**
+ * Forget this address's failures after a correct password.
+ *
+ * The GLOBAL counter is deliberately NOT cleared. One correct sign-in says
+ * something about this address; it says nothing about the hundred failures
+ * arriving from elsewhere, and clearing it would hand an attacker a reset
+ * button in the form of the owner logging in.
+ */
+function clearFailures(ip: string): void {
+  clearRate(IP_BUCKET, ip);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +160,9 @@ export async function signIn(password: string): Promise<LoginOutcome> {
   }
 
   const now = Date.now();
-  const locked = lockoutRemainingMs(now);
+  const ip = await clientIp();
+
+  const locked = lockoutRemainingMs(ip, now);
   if (locked > 0) {
     const minutes = Math.ceil(locked / 60000);
     return {
@@ -168,15 +171,26 @@ export async function signIn(password: string): Promise<LoginOutcome> {
     };
   }
 
+  /*
+    The progressive delay, paid BEFORE the password is checked.
+
+    Before, so it costs the same whether the guess was close or nowhere near:
+    a delay applied only to failures is a timing oracle that says "that one
+    was different". Ahead of verifyPassword it is simply the price of an
+    attempt from an address that has been getting them wrong.
+  */
+  const delay = progressiveDelayMs(failuresFor(ip, now));
+  if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+
   if (password === "" || !(await verifyPassword(password, config.hash))) {
-    recordFailure(now);
+    recordFailure(ip, now);
     // Deliberately vague. "Wrong password" and "no such user" are the same
     // sentence here anyway, but there is also nothing to gain from confirming
     // that the password was the part that was wrong.
     return { ok: false, message: "That did not work. Check the password and try again." };
   }
 
-  clearFailures();
+  clearFailures(ip);
 
   const expiresAtMs = now + SESSION_DURATION_MS;
   (await cookies()).set(ADMIN_COOKIE, createSessionToken(config.secret, expiresAtMs), {

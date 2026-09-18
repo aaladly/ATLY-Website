@@ -56,6 +56,15 @@ export type CheckoutRequest = {
    * be a record of something that actually happened.
    */
   acceptedTerms: boolean;
+  /**
+   * Honeypot. Always empty when a person filled the form in.
+   *
+   * Optional because it is an abuse signal rather than part of an order, and
+   * nothing downstream reads it: placeOrder checks it and discards it. It is
+   * declared here so the field has one definition rather than being smuggled
+   * through as an untyped extra key.
+   */
+  website?: string;
 };
 
 export type VariantRecord = {

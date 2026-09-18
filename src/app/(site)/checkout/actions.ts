@@ -10,6 +10,83 @@ import {
   paymentMethodConfiguration,
   requireStripe,
 } from "@/lib/payments";
+import { checkRate } from "@/lib/rateLimit";
+import { clientIp } from "@/lib/clientIp";
+import { checkoutSessionId } from "@/lib/checkoutSession";
+
+/**
+ * How hard checkout may be hit.
+ *
+ * Set from what a real person does, with room to spare. Somebody correcting a
+ * typo in their ZIP and pressing the button again a few times is well inside
+ * this; a script is not.
+ *
+ * Two counters rather than one, because they fail differently. The IP limit
+ * is the broad one and is defeated by rotating x-forwarded-for. The session
+ * limit follows a cookie, so rotating addresses does not shake it off — and
+ * dropping the cookie means starting a fresh checkout anyway.
+ */
+const CHECKOUT_LIMITS = {
+  perIp: { limit: 10, windowMs: 10 * 60 * 1000 },
+  perSession: { limit: 20, windowMs: 60 * 60 * 1000 },
+} as const;
+
+/**
+ * Refuse obvious abuse, or return null to carry on.
+ *
+ * The message is the same whichever limit tripped. Telling somebody which
+ * counter they hit tells them which one to work around.
+ */
+async function guardCheckout(request: CheckoutRequest): Promise<ValidationIssue | null> {
+  /*
+    The honeypot.
+
+    A field that is present in the DOM, positioned off-screen and marked
+    aria-hidden with tabindex -1, so no person and no screen reader ever
+    reaches it. Anything that fills it in walked the form programmatically.
+
+    Refused with the ordinary "something went wrong" wording rather than
+    "you are a bot", because a bot that is told why it failed is a bot that
+    gets fixed. A real person can never see this message.
+  */
+  if (typeof request.website === "string" && request.website.trim() !== "") {
+    console.warn("Checkout honeypot filled; request refused.");
+    return {
+      field: "payment",
+      message:
+        "We could not take this order. Please message us and we will arrange it by hand.",
+    };
+  }
+
+  const [ip, session] = await Promise.all([clientIp(), checkoutSessionId()]);
+
+  const byIp = checkRate(
+    "checkout",
+    ip,
+    CHECKOUT_LIMITS.perIp.limit,
+    CHECKOUT_LIMITS.perIp.windowMs,
+  );
+  const bySession = checkRate(
+    "checkout-session",
+    session,
+    CHECKOUT_LIMITS.perSession.limit,
+    CHECKOUT_LIMITS.perSession.windowMs,
+  );
+
+  if (byIp.allowed && bySession.allowed) return null;
+
+  const waitMs = Math.max(byIp.retryAfterMs, bySession.retryAfterMs);
+  const minutes = Math.max(1, Math.ceil(waitMs / 60000));
+
+  console.warn(
+    `Checkout rate limited: ip=${ip} used=${byIp.used}, session used=${bySession.used}.`,
+  );
+
+  return {
+    field: "payment",
+    message: `Too many attempts. Please wait ${minutes} minute${minutes === 1 ? "" : "s"} and try again, or message us and we will take the order by hand.`,
+  };
+}
 
 export type PlaceOrderResult =
   | {
@@ -37,6 +114,18 @@ export type PlaceOrderResult =
  * delivery, tax, or whether we deliver to an address at all.
  */
 export async function placeOrder(request: CheckoutRequest): Promise<PlaceOrderResult> {
+  /*
+    Abuse controls, before anything expensive happens.
+
+    A Server Action is a public endpoint. This one creates a Stripe
+    PaymentIntent, which is a network call to Stripe and a row in their
+    dashboard, so an unthrottled loop against it costs real time and makes a
+    mess somebody has to clear up. Checked first, ahead of validation, so a
+    flood is refused before it reaches the pricing engine.
+  */
+  const abuse = await guardCheckout(request);
+  if (abuse) return { ok: false, issues: [abuse] };
+
   const result = validateCheckout(request, await checkoutDeps(() => makeOrderReference()));
 
   if (!result.ok) return result;

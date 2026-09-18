@@ -44,6 +44,14 @@ export function CheckoutForm() {
   // the form, it is a record of something the customer did rather than
   // something they typed.
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  /**
+   * The honeypot.
+   *
+   * Never rendered visibly and never reachable by keyboard, so a person can
+   * only leave it empty. Anything that fills it in walked the form
+   * programmatically, and placeOrder refuses the request.
+   */
+  const [website, setWebsite] = useState("");
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   /**
    * The last answer from the server, and which request it was an answer to.
@@ -83,8 +91,9 @@ export function CheckoutForm() {
       items: cart.lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
       giftNote: form.giftNote,
       acceptedTerms,
+      website,
     }),
-    [form, cart.lines, acceptedTerms],
+    [form, cart.lines, acceptedTerms, website],
   );
 
   /**
@@ -282,6 +291,37 @@ export function CheckoutForm() {
 
   return (
     <form onSubmit={submit} noValidate>
+      {/*
+        The honeypot.
+
+        Four separate reasons a person can never fill this in: it is pushed
+        off-screen, it is aria-hidden so no screen reader announces it,
+        tabIndex -1 keeps it out of the keyboard order, and autoComplete is
+        off so no password manager offers to fill it. A bot walking the DOM
+        for inputs sees a plausible "website" field and fills it, and
+        placeOrder refuses the request.
+
+        Positioned rather than display:none, because some bots deliberately
+        skip fields that are hidden the obvious way.
+
+        It is NOT a label-less input by accident: giving it a <label> would
+        put it in the accessibility tree, which is the one thing that must
+        not happen.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[-9999px] h-px w-px overflow-hidden"
+      >
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
+
       <h1 className="text-display-xl">Checkout</h1>
 
       {/*
